@@ -89,7 +89,13 @@ class sql_data_handler():
             else:
                 prefix = str(data[complex_col[0]].value)
             for col in complex_col[1]:
-                name = f"{prefix}.{data[col].value}"
+                print(data[col].value)
+                if "Comments:" in str(data[col].value):
+                    data_str =str(data[col].value)
+                    data_str = data_str[:data_str.index(":")]
+                    name = f"{prefix}.{data_str}"
+                else:
+                    name = f"{prefix}.{data[col].value}"
                 name = name.replace(":","")
                 name = name.replace("©", "C")
                 name = name.replace(" ","")
@@ -222,8 +228,8 @@ class sql_data_handler():
         #init comments A47
         ic_alpha_range = ["A"]    
         ic_number_range = [[47,47]]
-        self.init_comments = self.section_to_cols(data, ic_alpha_range, ic_number_range, cartA_super_headers[0], [])
-        print(self.init_comments)
+        self.init_comments_A = self.section_to_cols(data, ic_alpha_range, ic_number_range, cartA_super_headers[0], [])
+        print(self.init_comments_A)
 
         #cartB
         cartB_super_headers = ["U28"]
