@@ -79,7 +79,7 @@ class sql_data_handler():
         return col_names
 
     def gen_col_names(self, data: Any, complex_col_name_locations:list[tuple[str,list[str]]], super_header_loc:list[str] = []) -> list[str]:
-        self.col_names: list[str] = []
+        cols:list[str] = []
         for complex_col in complex_col_name_locations:
             if super_header_loc != []:
                 super_header = [data[loc].value for loc in super_header_loc]
@@ -93,9 +93,11 @@ class sql_data_handler():
                 name = name.replace(":","")
                 name = name.replace("©", "C")
                 name = name.replace(" ","")
+                name = name.strip()
                 if ".None" not in name:
                     self.col_names.append(name)
-        return self.col_names
+                    cols.append(name)
+        return cols
     
     def complex_addy(self, alpha_range:list[str], number_range:list[list[int]], header:str) -> list[tuple[str,list[str]]]:
         i = 0 
@@ -154,128 +156,110 @@ class sql_data_handler():
         precoat_number_range:list[list[int]] = [[9,14]] * (len(precoat_alpha_range) - 1)
         precoat_number_range.append([9,11])
         self.pre_coat = self.section_to_cols(data, precoat_alpha_range, precoat_number_range, "A7", [])
-        for name in self.pre_coat: self.col_names.append(name)
         #Conveyor Furnace Setpoints L7
         conveyor_alpha_range: list[str] = ["L"]
         conveyor_number_range:list[list[int]] = [[9,19]]
         self.conveyor = self.section_to_cols(data, conveyor_alpha_range, conveyor_number_range, "L7", [])
-        for name in self.conveyor: self.col_names.append(name)
         #conveyor furnace settings
         cfs_super = ["A17"]
         #recipe A18
         cfs_alpha_range: list[str]= ["A"]
         cfs_number_range: list[list[int]]= [[19,25]]
         self.cfs_rec = self.section_to_cols(data, cfs_alpha_range, cfs_number_range, "A18", cfs_super)
-        for name in self.cfs_rec: self.col_names.append(name)
         #N2 flows F18
         cfs_alpha_range = ["E"]
         cfs_number_range = [[19,24]]
         self.cfs_Ntwo = self.section_to_cols(data, cfs_alpha_range, cfs_number_range, "F18", cfs_super)
-        for name in self.cfs_Ntwo: self.col_names.append(name)
         #cart A
         cartA_super_headers = ["A28"]
         #exhaustBlower A30
         eb_alpharange = ["C","D","E","F","G","H"]
         eb_number_range = [[29,29]] * len(eb_alpharange)
         self.exhaust_blower_A = self.section_to_cols(data, eb_alpharange, eb_number_range, "A30", cartA_super_headers)
-        for name in self.exhaust_blower_A: self.col_names.append(name)
         #condenser temp L29
         ct_alpha_range = ["L"]
         ct_number_range = [[30,31]]
         self.condenser_temp_A = self.section_to_cols(data, ct_alpha_range, ct_number_range, "L29", cartA_super_headers)
-        for name in self.condenser_temp_A: self.col_names.append(name)
         #exhaust_flow  A31
         af_alpharange = ["C","D","E","F","G","H"]
         af_number_range =[[29,29]] * len(af_alpharange)
         self.exhaust_flow_A = self.section_to_cols(data, af_alpharange, af_number_range, "A31", cartA_super_headers)
-        for name in self.exhaust_flow_A: self.col_names.append(name)
         #coater Inlet Mixer B33
         cim_alpha_range = ["C","D"]
         cim_number_range = [[33,33]] * len(cim_alpha_range)
         self.cim_A = self.section_to_cols(data, cim_alpha_range, cim_number_range, "B33", cartA_super_headers)
-        for name in self.cim_A: self.col_names.append(name)
         #Coater Inlet Line F33
         cil_alpha_range = ["G","H"]
         cil_number_range = [[33,33]] * len(cil_alpha_range)
         self.cil_A = self.section_to_cols(data, cil_alpha_range, cil_number_range, "F33", cartA_super_headers)
-        for name in self.cil_A: self.col_names.append(name)
         #bypass temp J33
         bt_alpha_range = ["K","L"]
         bt_number_range = [[33,33]] * len(bt_alpha_range)
         self.bypass_temp_A = self.section_to_cols(data, bt_alpha_range, bt_number_range, "J33", cartA_super_headers)
-        for name in self.bypass_temp_A: self.col_names.append(name)
         #chemistry A37
         chem_alpha_range = ["A","B","C","D","E","F","G","I","J","K","L","M","F"]
         chem_number_range = [[38,38]] * (len(chem_alpha_range) -1)
         chem_number_range.append([44,44])
         self.chemistry_A = self.section_to_cols(data, chem_alpha_range, chem_number_range, "A37", cartA_super_headers)
-        for name in self.chemistry_A: self.col_names.append(name)
         #coater Temperature P29
         ct_alpha_range = ["P"]
         ct_number_range = [[30,36]]
         self.coater_temp_A = self.section_to_cols(data, ct_alpha_range, ct_number_range, "P29", cartA_super_headers)
-        for name in self.coater_temp_A: self.col_names.append(name)
         #TFE
         cartA_super_headers.append("P38")
         #tfe oil jacket Q39
         tfe_alpha_range = ["P"]
         tfe_number_range = [[40,41]]
         self.tfe_oil_jacket = self.section_to_cols(data, tfe_alpha_range, tfe_number_range, "Q39", cartA_super_headers)
-        for name in self.tfe_oil_jacket: self.col_names.append(name)
         #tfe line 1 R39
         tfe_alpha_range = ["P"]
         tfe_number_range = [[40,41]]
         self.tfe_line_one = self.section_to_cols(data, tfe_alpha_range, tfe_number_range, "R39", cartA_super_headers)
-        for name in self.tfe_line_one: self.col_names.append(name)
         #tfe line 2 S39
         tfe_alpha_range = ["P"]
         tfe_number_range = [[40,41]]
         self.tfe_line_two = self.section_to_cols(data, tfe_alpha_range, tfe_number_range, "S39", cartA_super_headers)
-        for name in self.tfe_line_two: self.col_names.append(name)
-        
+        #init comments A47
+        ic_alpha_range = ["A"]    
+        ic_number_range = [[47,47]]
+        self.init_comments = self.section_to_cols(data, ic_alpha_range, ic_number_range, cartA_super_headers[0], [])
+        print(self.init_comments)
+
         #cartB
         cartB_super_headers = ["U28"]
         #exhaustBlower U30
         eb_alpharange = ["W","X","Y","Z","AA","AB"]
         eb_number_range = [[29,29]] * len(eb_alpharange)
         self.exhaust_blower_B = self.section_to_cols(data, eb_alpharange, eb_number_range, "U30", cartB_super_headers)
-        for name in self.exhaust_blower_B: self.col_names.append(name)
         #condenser temp L29
         ct_alpha_range = ["L"]
         ct_number_range = [[30,31]]
         self.condenser_temp_B = self.section_to_cols(data, ct_alpha_range, ct_number_range, "L29", cartB_super_headers)
-        for name in self.condenser_temp_B: self.col_names.append(name)
         #exhaust_flow  A31
         af_alpharange = ["C","D","E","F","G","H"]
         af_number_range =[[29,29]] * len(af_alpharange)
         self.exhaust_flow_B = self.section_to_cols(data, af_alpharange, af_number_range, "A31", cartB_super_headers)
-        for name in self.exhaust_flow_B: self.col_names.append(name)
         #coater Inlet Mixer B33
         cim_alpha_range = ["C","D"]
         cim_number_range = [[33,33]] * len(cim_alpha_range)
         self.cim_B = self.section_to_cols(data, cim_alpha_range, cim_number_range, "B33", cartB_super_headers)
-        for name in self.cim_B: self.col_names.append(name)
         #Coater Inlet Line F33
         cil_alpha_range = ["G","H"]
         cil_number_range = [[33,33]] * len(cil_alpha_range)
         self.cil_B = self.section_to_cols(data, cil_alpha_range, cil_number_range, "F33", cartB_super_headers)
-        for name in self.cil_B: self.col_names.append(name)
         #bypass temp J33
         bt_alpha_range = ["K","L"]
         bt_number_range = [[33,33]] * len(bt_alpha_range)
         self.bypass_temp_B = self.section_to_cols(data, bt_alpha_range, bt_number_range, "J33", cartB_super_headers)
-        for name in self.bypass_temp_B: self.col_names.append(name)
         #chemistry A37
         chem_alpha_range = ["A","B","C","D","E","F","G","I","J","K","L","M","F"]
         chem_number_range = [[38,38]] * (len(chem_alpha_range) -1)
         chem_number_range.append([44,44])
         self.chemistry_B = self.section_to_cols(data, chem_alpha_range, chem_number_range, "A37", cartB_super_headers)
-        for name in self.chemistry_B: self.col_names.append(name)
         #coater Temperature P29
         ct_alpha_range = ["P"]
         ct_number_range = [[30,36]]
         self.coater_temp_B = self.section_to_cols(data, ct_alpha_range, ct_number_range, "P29", cartB_super_headers)
-        for name in self.coater_temp_B: self.col_names.append(name)
 
     def build_table(self, data:Any):
         # for data in self.excel_datas:
@@ -307,7 +291,8 @@ class sql_data_handler():
         self.cursor.execute(query)
         
         results = self.cursor.fetchall()
-        
+        col_data_types:list[str] = ["VARCHAR(255)"] * len(self.col_names)
+        # print(results)
 
     def build_db(self):
         for data in self.excel_datas:
@@ -349,5 +334,4 @@ if __name__ == "__main__":
     temp.build_db()
     temp.close()
 
-    print(temp.col_names)
 #end region
