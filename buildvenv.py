@@ -15,17 +15,6 @@ import datetime as dt
 #endregion
 
 
-date = dt.now().strftime("%m-%d-%Y, Hour %H Min %M Sec %S")
-logging.basicConfig(
-    level=logging.DEBUG, # Set a global logging level
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        # logging.StreamHandler(), # Log to console
-        TimedRotatingFileHandler(f'logs\\{date}.log', when = "D", backupCount= 5)
-    ]
-)
-
-
 def venv_builder(req = "constraints.txt") -> None:
     """
     Creates a Python virtual environment in the current working directory and installs dependencies from a requirements file.
@@ -40,16 +29,11 @@ def venv_builder(req = "constraints.txt") -> None:
     Returns:
         None
     """
-    global logger
-    logger.debug("Starting virtual environment builder")
-    logger.debug(f"Using requirements file: {req}")
+
     lines: list[str]
     req_file:str = req
     with open( req_file, 'r') as f:
         lines = list(f.readlines())
-    logger.debug(f"Read {len(lines)} lines from requirements file")
-
-    logger.debug("Stripping lines and replacing 'delcom' entries")
     stripped_lines: list[str] = []
     stripped: str = ""
     cwd = os.getcwd()
@@ -65,11 +49,8 @@ def venv_builder(req = "constraints.txt") -> None:
         with open(req_file, "w") as f:
             for line in stripped_lines:
                 f.write("\n" + line)
-                
-        logger.debug(f"Creating virtual environment at {venv_path}")
-        venv.create(venv_path, with_pip=True, clear=True)
 
-        logger.debug("Virtual environment created, installing dependencies")
+        venv.create(venv_path, with_pip=True, clear=True)
         
         script = os.path.join(venv_path, 'Scripts')
 
@@ -77,8 +58,17 @@ def venv_builder(req = "constraints.txt") -> None:
 
         pip = os.path.join(script, 'pip.exe')
         
-        logger.debug(f"Using Python interpreter at {py} and pip at {pip}")
+
         install = f"{py} {pip} install -r constraints.txt"
 
         os.system(install)
-        logger.debug("Dependencies installed")
+
+        
+        
+        
+
+if __name__ == "__main__":
+    try:
+        venv_builder()
+    except Exception as e:
+        print("Exception in main: " + str(e))
