@@ -1,4 +1,5 @@
 #region imports
+from calendar import c
 import pyodbc
 import json
 from openpyxl import load_workbook
@@ -70,17 +71,30 @@ class sql_data_handler():
     
     #reguib sql and excel utils
     
-    def complex_addy(self, alpha_range:list[str], number_range:list[list[int]], header:str) -> list[tuple[str,list[str]]] :
-        """
-        Generates a list of address strings by combining each letter in `alpha_range` with a range of numbers specified in `number_range`,
-        and returns them as a list of tuples with the provided header.
-        Args:
-            alpha_range (list[str]): A list of string prefixes (typically letters) to be combined with numbers.
-            number_range (list[list[int]]): A list of [start, end] pairs, where each pair defines the inclusive range of numbers to append to the corresponding letter in `alpha_range`.
-            header (str): A string to be used as the header in the returned tuple.
-        Returns:
-            list[tuple[str, list[str]]]: A list containing a single tuple, where the first element is the header and the second element is the list of generated address strings.
-        """
+    
+    def section_to_cols(self,  data: Any, alpha_range:list[str], number_range:list[list[int]], header:str, super_header_loc:list[str] = []) -> list[str]:
+        complex_loc_locations = self.complex_addy(alpha_range, number_range, header)
+        col_names = self.gen_col_names(data, complex_loc_locations, super_header_loc)
+        return col_names
+
+    def gen_col_names(self, data: Any, complex_col_name_locations:list[tuple[str,list[str]]], super_header_loc:list[str] = []) -> list[str]:
+        col_names: list[str] = []
+        for complex_col in complex_col_name_locations:
+            if super_header_loc != []:
+                super_header = [data[loc].value for loc in super_header_loc]
+                prefix = (".").join(super_header)
+                
+                prefix:str = prefix + "." + str(data[complex_col[0]].value)
+            else:
+                prefix = str(data[complex_col[0]].value)
+            for col in complex_col[1]:
+                name = f"{prefix}.{data[col].value}"
+                if ".None" not in name:
+                    col_names.append(name)
+        return col_names
+    
+    
+    def complex_addy(self, alpha_range:list[str], number_range:list[list[int]], header:str) -> list[tuple[str,list[str]]]:
         i = 0 
         addys: list[str] = []
         for letter in alpha_range:
@@ -116,7 +130,6 @@ class sql_data_handler():
             query_as_list.append(temp)
             i += 1
             
-            
         query_col = ",".join(query_as_list)
         query = f"{query_pre} {query_col})"
 
@@ -148,39 +161,56 @@ class sql_data_handler():
             - self.table_query_builder is a method that builds a CREATE TABLE SQL query.
         """
         for data in self.excel_datas:
-            sample:Any = data["I3"].value #type:ignore 
+            col_names: list[str] = []
+            sample:Any = data["I3"].value #type:ignore
             run:Any = data["N3"].value #type:ignore
             table_name:str = f"cvd_{sample}_{run}"
             data_holder = self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'")
             self.tables = [x[2] for x in data_holder]
             col_name_locations:list[str] = ["A3", "H3", "M3", "A5", "H5"]
+            col_names = [data[loc].value for loc in col_name_locations]
             col_data_types:list[str] = ["VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)"]
             
             #building complex column names
-            
-            #for pre-coatingcheck list
-            # pre_coating_check#
+             
+            #complex data
+            # pre_coating_check A7
             precoat_alpha_range: list[str] = ["A", "C", "E", "G"]#[self.alphabet[i] for i in range(self.alphabet.index("A"), self.alphabet.index("G")+1)]
             precoat_number_range:list[list[int]] = [[9,14]] * (len(precoat_alpha_range) - 1)
             precoat_number_range.append([9,11])
+            pre_coat = self.section_to_cols(data, precoat_alpha_range, precoat_number_range, "A7", [])
+            #Conveyor Furnace Setpoints L7
+            conveyor_alpha_range: list[str] = ["L"]
+            conveyor_number_range:list[list[int]] = [[9,19]]
+            conveyor = self.section_to_cols(data, conveyor_alpha_range, conveyor_number_range, "L7", [])
+            #conveyor furnace settings
+            
+            cfs_super = ["A17"]
+            
+            #recipe #A18
+            # cfs_alpha_range: list[str]= ["A"]
+            # cfs_number_range: list[list[int]]= [[19,25]]
+            # cfs_complex_col_loc
+            
+            
+            
+            
+            #cart A
+            cartA_super_headers = ["A28"]
+            #exhaustBlower A30
+            eb_alpharange = ["C","D","E","F","G","H"]
+            eb_number_range = [[29,29]] * len(eb_alpharange)
+            exhaust_blower = self.section_to_cols(data, eb_alpharange, eb_number_range, "A30", cartA_super_headers)
 
-            complex_col_name_locations: list[tuple[str,list[str]]] = self.complex_addy(precoat_alpha_range, precoat_number_range, "A7")
-            for complex_col in complex_col_name_locations:
-                prefix:str = str(data[complex_col[0]].value)
-                for col in complex_col[1]:
-                    name = f"{prefix}:{data[col].value}"
-                    print(name)
-                pass
-            col_names:list[str] = []
-           
-            for loc in col_name_locations:
-                col_names.append(data[loc].value.replace(":",""))
-            table_query = self.table_query_builder(table_name, col_names, col_data_types)
+            
+            print(exhaust_blower)
+            # table_query = self.table_query_builder(table_name, col_names, col_data_types)
             
             if table_name not in self.tables:
                 self.cursor.execute(table_query)
                 self.cursor.commit()
                 print(f"Table {table_name} created")
+
 
 
     
