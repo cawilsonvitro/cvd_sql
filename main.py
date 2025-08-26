@@ -38,8 +38,9 @@ def read_excel(excel_path: str) -> list[Any]:
 
 class sql_data_handler():
     #region setup
-    def __init__(self, config: str, datas: list[list[Any]]) -> None:
+    def __init__(self, config: str, datas: list[list[Any]], paths: list[str]) -> None:
         self.config_path = config
+        self.paths = paths
         self.config: dict[str,dict[str,str]] = {}
         self.dbconfig: dict[str,str] = {}
         self.cnxn = None
@@ -309,11 +310,21 @@ class sql_data_handler():
         query = f'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = \'{self.table_name}\''
         
         self.cursor.execute(query)
-        
         results = self.cursor.fetchall()
-        col_data_types:list[str] = ["VARCHAR(255)"] * len(self.col_names)
-        # print(results)
-
+        print(self.table_name)
+        
+        query = f"ALTER TABLE \"{self.table_name}\" ADD "
+        col_data_types:list[str] = ["VARCHAR(255)"] * (len(self.col_names) -2)
+        col_data_types.append("VARCHAR(MAX)")
+        col_data_types.append("VARCHAR(MAX)")
+        query_list: list[str] = []
+        i = 0
+        for col in self.col_names:
+            if col not in results:
+                query_list.append(f'"{col}" {col_data_types[i]}')
+            i += 1
+        query_str = (",").join(query_list)
+        query += query_str
     def build_db(self):
         for data in self.excel_datas: 
             for sheet in data:
@@ -347,18 +358,16 @@ if __name__ == "__main__":
     paths:list[str] = []
     datas:list[list[Any]] = []
     
-    for _,_,files in os.walk("datasheets"):
+    for _,_,files in os.walk("to_process"):
         for file in files:
-            path = os.path.join("datasheets",file)
+            path = os.path.join("to_process",file)
             paths.append(path)
             if ".xlsx" in file: datas.append(read_excel(path))
-    temp = sql_data_handler("config.json", datas)
-    
-    # print(datas[0])
-    print(datas)
+    temp = sql_data_handler("config.json", datas, paths)
     
     temp.connect()
     temp.build_db()
     temp.close()
-    # print(temp.col_names)
+    
+    
 #end region
