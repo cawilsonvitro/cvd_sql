@@ -1,5 +1,6 @@
 #region imports
 from sys import prefix
+from numpy import number
 import pyodbc
 import json
 from openpyxl import load_workbook
@@ -30,6 +31,7 @@ class sql_data_handler():
         self.cnxn = None
         self.cursor: pyodbc.Cursor 
         self.server = ""
+        self.alphabet = [chr(i) for i in range(ord('A'), ord('Z')+1)]
         self.database = ""
         self.username = ""
         self.password = ""
@@ -85,9 +87,23 @@ class sql_data_handler():
             data_holder = self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'")
             self.tables = [x[2] for x in data_holder]
             col_name_locations:list[str] = ["A3", "H3", "M3", "A5", "H5"]
-            
-            col_names:list[str] = []
             col_data_types:list[str] = ["VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)"]
+            
+            #building complex column names
+            
+            #for pre-coatingcheck list
+            # pre_coating_check#
+            precoat_alpha_range: list[str] = ["A", "C", "E", "G"]#[self.alphabet[i] for i in range(self.alphabet.index("A"), self.alphabet.index("G")+1)]
+            precoat_number_range:list[list[int]] = [[9,14]] * (len(precoat_alpha_range) - 1)
+            precoat_number_range.append([9,11])
+
+            complex_col_name_locations: list[tuple[str,list[str]]] = [("A7", self.complex_addy(precoat_alpha_range, precoat_number_range)) ] #complex_col_name_locations[set of complex col][complex header][complex col]
+            complex_col_names: list[str] = []
+            for complex_col in complex_col_name_locations:
+                print(complex_col)
+                pass
+            col_names:list[str] = []
+           
             for loc in col_name_locations:
                 col_names.append(data[loc].value.replace(":",""))
             table_query = self.table_query_builder(table_name, col_names, col_data_types)
@@ -96,7 +112,17 @@ class sql_data_handler():
                 self.cursor.execute(table_query)
                 self.cursor.commit()
                 print(f"Table {table_name} created")
-                
+
+    def complex_addy(self, alpha_range:list[str], number_range:list[list[int]]) -> list[str]:
+        i = 0 
+        addys: list[str] = []
+        for letter in alpha_range:
+            for number in range(number_range[i][0], number_range[i][1] + 1):
+                addy = letter + str(number)
+                addys.append(addy)
+            i += 1
+        return addys
+    
     #endregion
     
     #region sql server connections
@@ -123,7 +149,7 @@ if __name__ == "__main__":
     datas:list[list[Any]] = []
     for _,_,files in os.walk("datasheets"):
         for file in files:
-            datas.append(read_excel(os.path.join("datasheets",file)))
+            if ".xlsx" in file: datas.append(read_excel(os.path.join("datasheets",file)))
     temp = sql_data_handler("config.json", datas[0])
     
     
