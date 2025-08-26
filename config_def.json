@@ -1,0 +1,9 @@
+{
+    "Database_Config":{
+        "host": "localhost",
+        "db": "cvd_test",
+        "driver": "{ODBC Driver 17 for SQL Server}",
+        "username": "your_username_here",
+        "password": "your_password_here"
+    }
+}
