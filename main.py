@@ -56,7 +56,22 @@ class sql_data_handler():
         if self.password == "": self.password = input("No password in config please enter:")
     #endregion
     
-    #reguib sql utils
+    #reguib sql and excel utils
+    
+    def complex_addy(self, alpha_range:list[str], number_range:list[list[int]], header:str) -> list[tuple[str,list[str]]] :
+        i = 0 
+        addys: list[str] = []
+        for letter in alpha_range:
+            for number in range(number_range[i][0], number_range[i][1] + 1):
+                addy = letter + str(number)
+                addys.append(addy)
+            i += 1
+
+        complex_col_name_locations: list[tuple[str,list[str]]] = [(header, addys)]
+        
+
+        return complex_col_name_locations
+    
     def table_query_builder(self, table_name:str, cols:list[str], data_types:list[str]) -> str:
 
         query_pre:str = f"CREATE TABLE {table_name} ("
@@ -97,10 +112,12 @@ class sql_data_handler():
             precoat_number_range:list[list[int]] = [[9,14]] * (len(precoat_alpha_range) - 1)
             precoat_number_range.append([9,11])
 
-            complex_col_name_locations: list[tuple[str,list[str]]] = [("A7", self.complex_addy(precoat_alpha_range, precoat_number_range)) ] #complex_col_name_locations[set of complex col][complex header][complex col]
-            complex_col_names: list[str] = []
+            complex_col_name_locations: list[tuple[str,list[str]]] = self.complex_addy(precoat_alpha_range, precoat_number_range, "A7")
             for complex_col in complex_col_name_locations:
-                print(complex_col)
+                prefix:str = str(data[complex_col[0]].value)
+                for col in complex_col[1]:
+                    name = f"{prefix}:{data[col].value}"
+                    print(name)
                 pass
             col_names:list[str] = []
            
@@ -113,15 +130,7 @@ class sql_data_handler():
                 self.cursor.commit()
                 print(f"Table {table_name} created")
 
-    def complex_addy(self, alpha_range:list[str], number_range:list[list[int]]) -> list[str]:
-        i = 0 
-        addys: list[str] = []
-        for letter in alpha_range:
-            for number in range(number_range[i][0], number_range[i][1] + 1):
-                addy = letter + str(number)
-                addys.append(addy)
-            i += 1
-        return addys
+
     
     #endregion
     
