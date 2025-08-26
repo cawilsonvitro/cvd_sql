@@ -89,6 +89,8 @@ class sql_data_handler():
                 prefix = str(data[complex_col[0]].value)
             for col in complex_col[1]:
                 name = f"{prefix}.{data[col].value}"
+                name = name.replace(":","")
+                name = name.replace("Δ","Delta")
                 if ".None" not in name:
                     col_names.append(name)
         return col_names
@@ -184,16 +186,15 @@ class sql_data_handler():
             conveyor_number_range:list[list[int]] = [[9,19]]
             conveyor = self.section_to_cols(data, conveyor_alpha_range, conveyor_number_range, "L7", [])
             #conveyor furnace settings
-            
             cfs_super = ["A17"]
-            
-            #recipe #A18
-            # cfs_alpha_range: list[str]= ["A"]
-            # cfs_number_range: list[list[int]]= [[19,25]]
-            # cfs_complex_col_loc
-            
-            
-            
+            #recipe A18
+            cfs_alpha_range: list[str]= ["A"]
+            cfs_number_range: list[list[int]]= [[19,25]]
+            cfs_rec = self.section_to_cols(data, cfs_alpha_range, cfs_number_range, "A18", cfs_super)
+            #N2 flows F18
+            cfs_alpha_range = ["E"]
+            cfs_number_range = [[19,24]]
+            cfs_Ntwo = self.section_to_cols(data, cfs_alpha_range, cfs_number_range, "F18", cfs_super)
             
             #cart A
             cartA_super_headers = ["A28"]
@@ -201,9 +202,11 @@ class sql_data_handler():
             eb_alpharange = ["C","D","E","F","G","H"]
             eb_number_range = [[29,29]] * len(eb_alpharange)
             exhaust_blower = self.section_to_cols(data, eb_alpharange, eb_number_range, "A30", cartA_super_headers)
+            #exhaust_flow  A31
+            af_alpharange = ["C","D","E","F","G","H"]
+            af_number_range =[[29,29]] * len(af_alpharange)
+            exhaust_flow = self.section_to_cols(data, af_alpharange, af_number_range, "A31", cartA_super_headers)
 
-            
-            print(exhaust_blower)
             # table_query = self.table_query_builder(table_name, col_names, col_data_types)
             
             if table_name not in self.tables:
