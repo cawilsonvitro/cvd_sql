@@ -1,5 +1,6 @@
 #region imports
 from calendar import c
+import re
 import pyodbc
 import json
 from openpyxl import load_workbook
@@ -78,7 +79,7 @@ class sql_data_handler():
         return col_names
 
     def gen_col_names(self, data: Any, complex_col_name_locations:list[tuple[str,list[str]]], super_header_loc:list[str] = []) -> list[str]:
-        col_names: list[str] = []
+        self.col_names: list[str] = []
         for complex_col in complex_col_name_locations:
             if super_header_loc != []:
                 super_header = [data[loc].value for loc in super_header_loc]
@@ -90,11 +91,11 @@ class sql_data_handler():
             for col in complex_col[1]:
                 name = f"{prefix}.{data[col].value}"
                 name = name.replace(":","")
-                name = name.replace("Δ","Delta")
+                name = name.replace("©", "C")
+                name = name.replace(" ","")
                 if ".None" not in name:
-                    col_names.append(name)
-        return col_names
-    
+                    self.col_names.append(name)
+        return self.col_names
     
     def complex_addy(self, alpha_range:list[str], number_range:list[list[int]], header:str) -> list[tuple[str,list[str]]]:
         i = 0 
@@ -142,80 +143,177 @@ class sql_data_handler():
     
     #region excel to sql
     
-    def build_table(self):
-        """
-        Builds and creates a SQL table for each dataset in self.excel_datas based on extracted sample and run values.
-        For each dataset:
-            - Constructs a table name using sample and run identifiers.
-            - Checks if the table already exists in the database.
-            - Extracts column names from specified Excel cell locations.
-            - Dynamically generates complex column names for pre-coating check data.
-            - Builds a CREATE TABLE SQL query with the extracted column names and predefined data types.
-            - Executes the query to create the table if it does not already exist.
-        Side Effects:
-            - Updates self.tables with the list of existing tables.
-            - Prints the names of complex columns and confirmation messages upon table creation.
-            - Commits changes to the database.
-        Assumes:
-            - self.excel_datas is a list of dictionaries mapping cell addresses to cell objects.
-            - self.cursor is a database cursor object with execute and commit methods.
-            - self.complex_addy is a method that generates complex column address mappings.
-            - self.table_query_builder is a method that builds a CREATE TABLE SQL query.
-        """
+    def gen_all_cols(self, data:Any) -> None:
+        # for data in self.excel_datas:
+        self.col_names: list[str] = []
+        #building complex column names
+            
+        #complex data
+        # pre_coating_check A7
+        precoat_alpha_range: list[str] = ["A", "C", "E", "G"]#[self.alphabet[i] for i in range(self.alphabet.index("A"), self.alphabet.index("G")+1)]
+        precoat_number_range:list[list[int]] = [[9,14]] * (len(precoat_alpha_range) - 1)
+        precoat_number_range.append([9,11])
+        self.pre_coat = self.section_to_cols(data, precoat_alpha_range, precoat_number_range, "A7", [])
+        for name in self.pre_coat: self.col_names.append(name)
+        #Conveyor Furnace Setpoints L7
+        conveyor_alpha_range: list[str] = ["L"]
+        conveyor_number_range:list[list[int]] = [[9,19]]
+        self.conveyor = self.section_to_cols(data, conveyor_alpha_range, conveyor_number_range, "L7", [])
+        for name in self.conveyor: self.col_names.append(name)
+        #conveyor furnace settings
+        cfs_super = ["A17"]
+        #recipe A18
+        cfs_alpha_range: list[str]= ["A"]
+        cfs_number_range: list[list[int]]= [[19,25]]
+        self.cfs_rec = self.section_to_cols(data, cfs_alpha_range, cfs_number_range, "A18", cfs_super)
+        for name in self.cfs_rec: self.col_names.append(name)
+        #N2 flows F18
+        cfs_alpha_range = ["E"]
+        cfs_number_range = [[19,24]]
+        self.cfs_Ntwo = self.section_to_cols(data, cfs_alpha_range, cfs_number_range, "F18", cfs_super)
+        for name in self.cfs_Ntwo: self.col_names.append(name)
+        #cart A
+        cartA_super_headers = ["A28"]
+        #exhaustBlower A30
+        eb_alpharange = ["C","D","E","F","G","H"]
+        eb_number_range = [[29,29]] * len(eb_alpharange)
+        self.exhaust_blower_A = self.section_to_cols(data, eb_alpharange, eb_number_range, "A30", cartA_super_headers)
+        for name in self.exhaust_blower_A: self.col_names.append(name)
+        #condenser temp L29
+        ct_alpha_range = ["L"]
+        ct_number_range = [[30,31]]
+        self.condenser_temp_A = self.section_to_cols(data, ct_alpha_range, ct_number_range, "L29", cartA_super_headers)
+        for name in self.condenser_temp_A: self.col_names.append(name)
+        #exhaust_flow  A31
+        af_alpharange = ["C","D","E","F","G","H"]
+        af_number_range =[[29,29]] * len(af_alpharange)
+        self.exhaust_flow_A = self.section_to_cols(data, af_alpharange, af_number_range, "A31", cartA_super_headers)
+        for name in self.exhaust_flow_A: self.col_names.append(name)
+        #coater Inlet Mixer B33
+        cim_alpha_range = ["C","D"]
+        cim_number_range = [[33,33]] * len(cim_alpha_range)
+        self.cim_A = self.section_to_cols(data, cim_alpha_range, cim_number_range, "B33", cartA_super_headers)
+        for name in self.cim_A: self.col_names.append(name)
+        #Coater Inlet Line F33
+        cil_alpha_range = ["G","H"]
+        cil_number_range = [[33,33]] * len(cil_alpha_range)
+        self.cil_A = self.section_to_cols(data, cil_alpha_range, cil_number_range, "F33", cartA_super_headers)
+        for name in self.cil_A: self.col_names.append(name)
+        #bypass temp J33
+        bt_alpha_range = ["K","L"]
+        bt_number_range = [[33,33]] * len(bt_alpha_range)
+        self.bypass_temp_A = self.section_to_cols(data, bt_alpha_range, bt_number_range, "J33", cartA_super_headers)
+        for name in self.bypass_temp_A: self.col_names.append(name)
+        #chemistry A37
+        chem_alpha_range = ["A","B","C","D","E","F","G","I","J","K","L","M","F"]
+        chem_number_range = [[38,38]] * (len(chem_alpha_range) -1)
+        chem_number_range.append([44,44])
+        self.chemistry_A = self.section_to_cols(data, chem_alpha_range, chem_number_range, "A37", cartA_super_headers)
+        for name in self.chemistry_A: self.col_names.append(name)
+        #coater Temperature P29
+        ct_alpha_range = ["P"]
+        ct_number_range = [[30,36]]
+        self.coater_temp_A = self.section_to_cols(data, ct_alpha_range, ct_number_range, "P29", cartA_super_headers)
+        for name in self.coater_temp_A: self.col_names.append(name)
+        #TFE
+        cartA_super_headers.append("P38")
+        #tfe oil jacket Q39
+        tfe_alpha_range = ["P"]
+        tfe_number_range = [[40,41]]
+        self.tfe_oil_jacket = self.section_to_cols(data, tfe_alpha_range, tfe_number_range, "Q39", cartA_super_headers)
+        for name in self.tfe_oil_jacket: self.col_names.append(name)
+        #tfe line 1 R39
+        tfe_alpha_range = ["P"]
+        tfe_number_range = [[40,41]]
+        self.tfe_line_one = self.section_to_cols(data, tfe_alpha_range, tfe_number_range, "R39", cartA_super_headers)
+        for name in self.tfe_line_one: self.col_names.append(name)
+        #tfe line 2 S39
+        tfe_alpha_range = ["P"]
+        tfe_number_range = [[40,41]]
+        self.tfe_line_two = self.section_to_cols(data, tfe_alpha_range, tfe_number_range, "S39", cartA_super_headers)
+        for name in self.tfe_line_two: self.col_names.append(name)
+        
+        #cartB
+        cartB_super_headers = ["U28"]
+        #exhaustBlower U30
+        eb_alpharange = ["W","X","Y","Z","AA","AB"]
+        eb_number_range = [[29,29]] * len(eb_alpharange)
+        self.exhaust_blower_B = self.section_to_cols(data, eb_alpharange, eb_number_range, "U30", cartB_super_headers)
+        for name in self.exhaust_blower_B: self.col_names.append(name)
+        #condenser temp L29
+        ct_alpha_range = ["L"]
+        ct_number_range = [[30,31]]
+        self.condenser_temp_B = self.section_to_cols(data, ct_alpha_range, ct_number_range, "L29", cartB_super_headers)
+        for name in self.condenser_temp_B: self.col_names.append(name)
+        #exhaust_flow  A31
+        af_alpharange = ["C","D","E","F","G","H"]
+        af_number_range =[[29,29]] * len(af_alpharange)
+        self.exhaust_flow_B = self.section_to_cols(data, af_alpharange, af_number_range, "A31", cartB_super_headers)
+        for name in self.exhaust_flow_B: self.col_names.append(name)
+        #coater Inlet Mixer B33
+        cim_alpha_range = ["C","D"]
+        cim_number_range = [[33,33]] * len(cim_alpha_range)
+        self.cim_B = self.section_to_cols(data, cim_alpha_range, cim_number_range, "B33", cartB_super_headers)
+        for name in self.cim_B: self.col_names.append(name)
+        #Coater Inlet Line F33
+        cil_alpha_range = ["G","H"]
+        cil_number_range = [[33,33]] * len(cil_alpha_range)
+        self.cil_B = self.section_to_cols(data, cil_alpha_range, cil_number_range, "F33", cartB_super_headers)
+        for name in self.cil_B: self.col_names.append(name)
+        #bypass temp J33
+        bt_alpha_range = ["K","L"]
+        bt_number_range = [[33,33]] * len(bt_alpha_range)
+        self.bypass_temp_B = self.section_to_cols(data, bt_alpha_range, bt_number_range, "J33", cartB_super_headers)
+        for name in self.bypass_temp_B: self.col_names.append(name)
+        #chemistry A37
+        chem_alpha_range = ["A","B","C","D","E","F","G","I","J","K","L","M","F"]
+        chem_number_range = [[38,38]] * (len(chem_alpha_range) -1)
+        chem_number_range.append([44,44])
+        self.chemistry_B = self.section_to_cols(data, chem_alpha_range, chem_number_range, "A37", cartB_super_headers)
+        for name in self.chemistry_B: self.col_names.append(name)
+        #coater Temperature P29
+        ct_alpha_range = ["P"]
+        ct_number_range = [[30,36]]
+        self.coater_temp_B = self.section_to_cols(data, ct_alpha_range, ct_number_range, "P29", cartB_super_headers)
+        for name in self.coater_temp_B: self.col_names.append(name)
+
+    def build_table(self, data:Any):
+        # for data in self.excel_datas:
+        col_names: list[str] = []
+        sample:Any = data["I3"].value #type:ignore
+        run:Any = data["N3"].value #type:ignore
+        self.table_name:str = f"cvd_{sample}_{run}"
+        data_holder = self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'")
+        self.tables = [x[2] for x in data_holder]
+        col_name_locations:list[str] = ["A3", "H3", "M3", "A5", "H5"]
+        col_names = [data[loc].value for loc in col_name_locations]
+        for col in col_names:
+            if col[-1] == " ": 
+                col = col[:-1]
+            col = col.replace(" ","_")
+        col_data_types:list[str] = ["VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)"]
+
+        table_query = self.table_query_builder(self.table_name, col_names, col_data_types)
+        
+        if self.table_name not in self.tables:
+            self.cursor.execute(table_query)
+            self.cursor.commit()
+            print(f"Table {self.table_name} created")
+
+    
+    def build_cols(self):
+        query = f'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = \'{self.table_name}\''
+        
+        self.cursor.execute(query)
+        
+        results = self.cursor.fetchall()
+        
+
+    def build_db(self):
         for data in self.excel_datas:
-            col_names: list[str] = []
-            sample:Any = data["I3"].value #type:ignore
-            run:Any = data["N3"].value #type:ignore
-            table_name:str = f"cvd_{sample}_{run}"
-            data_holder = self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'")
-            self.tables = [x[2] for x in data_holder]
-            col_name_locations:list[str] = ["A3", "H3", "M3", "A5", "H5"]
-            col_names = [data[loc].value for loc in col_name_locations]
-            col_data_types:list[str] = ["VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)"]
-            
-            #building complex column names
-             
-            #complex data
-            # pre_coating_check A7
-            precoat_alpha_range: list[str] = ["A", "C", "E", "G"]#[self.alphabet[i] for i in range(self.alphabet.index("A"), self.alphabet.index("G")+1)]
-            precoat_number_range:list[list[int]] = [[9,14]] * (len(precoat_alpha_range) - 1)
-            precoat_number_range.append([9,11])
-            pre_coat = self.section_to_cols(data, precoat_alpha_range, precoat_number_range, "A7", [])
-            #Conveyor Furnace Setpoints L7
-            conveyor_alpha_range: list[str] = ["L"]
-            conveyor_number_range:list[list[int]] = [[9,19]]
-            conveyor = self.section_to_cols(data, conveyor_alpha_range, conveyor_number_range, "L7", [])
-            #conveyor furnace settings
-            cfs_super = ["A17"]
-            #recipe A18
-            cfs_alpha_range: list[str]= ["A"]
-            cfs_number_range: list[list[int]]= [[19,25]]
-            cfs_rec = self.section_to_cols(data, cfs_alpha_range, cfs_number_range, "A18", cfs_super)
-            #N2 flows F18
-            cfs_alpha_range = ["E"]
-            cfs_number_range = [[19,24]]
-            cfs_Ntwo = self.section_to_cols(data, cfs_alpha_range, cfs_number_range, "F18", cfs_super)
-            
-            #cart A
-            cartA_super_headers = ["A28"]
-            #exhaustBlower A30
-            eb_alpharange = ["C","D","E","F","G","H"]
-            eb_number_range = [[29,29]] * len(eb_alpharange)
-            exhaust_blower = self.section_to_cols(data, eb_alpharange, eb_number_range, "A30", cartA_super_headers)
-            #exhaust_flow  A31
-            af_alpharange = ["C","D","E","F","G","H"]
-            af_number_range =[[29,29]] * len(af_alpharange)
-            exhaust_flow = self.section_to_cols(data, af_alpharange, af_number_range, "A31", cartA_super_headers)
-
-            # table_query = self.table_query_builder(table_name, col_names, col_data_types)
-            
-            if table_name not in self.tables:
-                self.cursor.execute(table_query)
-                self.cursor.commit()
-                print(f"Table {table_name} created")
-
-
-
+            self.gen_all_cols(data)
+            self.build_table(data)
+            self.build_cols()
     
     #endregion
     
@@ -248,8 +346,8 @@ if __name__ == "__main__":
     
     
     temp.connect()
-    
-    temp.build_table()
-    
+    temp.build_db()
     temp.close()
+
+    print(temp.col_names)
 #end region
