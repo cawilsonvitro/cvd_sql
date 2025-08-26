@@ -131,7 +131,7 @@ class sql_data_handler():
             Only columns whose data type string contains both '(' and ')' will be included in the query.
         """
 
-        query_pre:str = f"CREATE TABLE {table_name} ("
+        query_pre:str = f"CREATE TABLE \"{table_name}\" ("
         temp:str = ""
         query_as_list:list[str] = []
         i = 0 
@@ -287,14 +287,18 @@ class sql_data_handler():
         self.tables = [x[2] for x in data_holder]
         col_name_locations:list[str] = ["A3", "H3", "M3", "A5", "H5"]
         col_names = [data[loc].value for loc in col_name_locations]
+        i = 0
         for col in col_names:
             if col[-1] == " ": 
                 col = col[:-1]
             col = col.replace(" ","_")
+            col = col.replace(":","")
+            col_names[i] = col
+            i += 1
         col_data_types:list[str] = ["VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)"]
 
-        table_query = self.table_query_builder(self.table_name, col_names, col_data_types)
-        
+        table_query =self.table_query_builder(self.table_name, col_names, col_data_types) 
+
         if self.table_name not in self.tables:
             self.cursor.execute(table_query)
             self.cursor.commit()
@@ -311,10 +315,12 @@ class sql_data_handler():
         # print(results)
 
     def build_db(self):
-        for data in self.excel_datas:
-            self.gen_all_cols(data)
-            self.build_table(data)
-            self.build_cols()
+        for data in self.excel_datas: 
+            for sheet in data:
+                self.gen_all_cols(sheet)
+                self.build_table(sheet)
+                self.build_cols()
+            # print(self.col_names)
     
     #endregion
     
@@ -338,16 +344,21 @@ class sql_data_handler():
 #region entry point
 if __name__ == "__main__":
 
-    
+    paths:list[str] = []
     datas:list[list[Any]] = []
+    
     for _,_,files in os.walk("datasheets"):
         for file in files:
-            if ".xlsx" in file: datas.append(read_excel(os.path.join("datasheets",file)))
-    temp = sql_data_handler("config.json", datas[0])
+            path = os.path.join("datasheets",file)
+            paths.append(path)
+            if ".xlsx" in file: datas.append(read_excel(path))
+    temp = sql_data_handler("config.json", datas)
     
+    # print(datas[0])
+    print(datas)
     
     temp.connect()
     temp.build_db()
     temp.close()
-
+    # print(temp.col_names)
 #end region
