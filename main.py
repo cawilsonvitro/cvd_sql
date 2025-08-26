@@ -89,7 +89,6 @@ class sql_data_handler():
             else:
                 prefix = str(data[complex_col[0]].value)
             for col in complex_col[1]:
-                print(data[col].value)
                 if "Comments:" in str(data[col].value):
                     data_str =str(data[col].value)
                     data_str = data_str[:data_str.index(":")]
@@ -228,8 +227,11 @@ class sql_data_handler():
         #init comments A47
         ic_alpha_range = ["A"]    
         ic_number_range = [[47,47]]
-        self.init_comments_A = self.section_to_cols(data, ic_alpha_range, ic_number_range, cartA_super_headers[0], [])
-        print(self.init_comments_A)
+        self.ic_comments_A = self.section_to_cols(data, ic_alpha_range, ic_number_range, cartA_super_headers[0], [])
+        #final_comments F47
+        fc_alpha_range = ["F"]
+        fc_number_range = [[47,47]]
+        self.fc_comments_A = self.section_to_cols(data, fc_alpha_range, fc_number_range, cartA_super_headers[0], [])
 
         #cartB
         cartB_super_headers = ["U28"]
@@ -266,7 +268,15 @@ class sql_data_handler():
         ct_alpha_range = ["P"]
         ct_number_range = [[30,36]]
         self.coater_temp_B = self.section_to_cols(data, ct_alpha_range, ct_number_range, "P29", cartB_super_headers)
-
+        #init comments A47
+        ic_alpha_range = ["A"]    
+        ic_number_range = [[47,47]]
+        self.ic_comments_B = self.section_to_cols(data, ic_alpha_range, ic_number_range, cartB_super_headers[0], [])
+        #final_comments F47
+        fc_alpha_range = ["F"]
+        fc_number_range = [[47,47]]
+        self.fc_comments_B = self.section_to_cols(data, fc_alpha_range, fc_number_range, cartB_super_headers[0], [])
+        
     def build_table(self, data:Any):
         # for data in self.excel_datas:
         col_names: list[str] = []
