@@ -98,6 +98,7 @@ class sql_data_handler():
                 name = name.replace(":","")
                 name = name.replace("©", "C")
                 name = name.replace(" ","")
+                name = name.replace("Δ", "Delta")
                 name = name.strip()
                 if ".None" not in name:
                     self.col_names.append(name)
@@ -345,6 +346,11 @@ class sql_data_handler():
             self.move_file(self.paths[i])
             i += 1
             # print(self.col_names)
+    
+    #endregion
+    
+    #region data processing
+
     
     #endregion
     
