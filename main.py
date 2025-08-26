@@ -1,6 +1,5 @@
 #region imports
-from calendar import c
-import re
+import shutil
 import pyodbc
 import json
 from openpyxl import load_workbook
@@ -149,6 +148,14 @@ class sql_data_handler():
     
     #endregion
     
+    #region file management
+    def move_file(self,cur_dir: str):
+        done_dir = "processed"
+        sheet_path = os.path.basename(cur_dir)
+        dest_dir = os.path.join(done_dir, sheet_path)
+        print(dest_dir)
+        shutil.move(cur_dir, dest_dir)
+    #endregion
     #region excel to sql
     
     def gen_all_cols(self, data:Any) -> None:
@@ -304,7 +311,6 @@ class sql_data_handler():
             self.cursor.execute(table_query)
             self.cursor.commit()
             print(f"Table {self.table_name} created")
-
     
     def build_cols(self):
         query = f'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = \'{self.table_name}\''
@@ -328,12 +334,16 @@ class sql_data_handler():
             query += query_str
             self.cursor.execute(query)
         self.cursor.commit()
+    
     def build_db(self):
+        i = 0
         for data in self.excel_datas: 
             for sheet in data:
                 self.gen_all_cols(sheet)
                 self.build_table(sheet)
                 self.build_cols()
+            self.move_file(self.paths[i])
+            i += 1
             # print(self.col_names)
     
     #endregion
