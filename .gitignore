@@ -213,3 +213,12 @@ credentials.json
 secrets.json
 .env
 .env.*
+
+#excel files
+*.xlsx
+*.xls
+*.xlsm
+*.xlsb
+*.xlw
+*.xlr
+*.csv
