@@ -310,7 +310,7 @@ class sql_data_handler():
         query = f'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = \'{self.table_name}\''
         
         self.cursor.execute(query)
-        results = self.cursor.fetchall()
+        results = [x[0] for x in self.cursor.fetchall()]
         print(self.table_name)
         
         query = f"ALTER TABLE \"{self.table_name}\" ADD "
@@ -323,8 +323,11 @@ class sql_data_handler():
             if col not in results:
                 query_list.append(f'"{col}" {col_data_types[i]}')
             i += 1
-        query_str = (",").join(query_list)
-        query += query_str
+        if query_list != []:
+            query_str = (",").join(query_list)
+            query += query_str
+            self.cursor.execute(query)
+        self.cursor.commit()
     def build_db(self):
         for data in self.excel_datas: 
             for sheet in data:
