@@ -1,4 +1,5 @@
 #region imports
+from re import S
 import shutil
 import pyodbc
 import json
@@ -42,8 +43,8 @@ class sql_data_handler():
         self.paths = paths
         self.config: dict[str,dict[str,str]] = {}
         self.dbconfig: dict[str,str] = {}
-        self.cnxn = None
-        self.cursor: pyodbc.Cursor 
+        self.col_names: list[str] = []
+        self.cursor: pyodbc.Cursor
         self.server = ""
         self.alphabet = [chr(i) for i in range(ord('A'), ord('Z')+1)]
         self.database = ""
@@ -350,11 +351,160 @@ class sql_data_handler():
     #endregion
     
     #region data processing
+    def get_data(self, addys: list[str], data:Any) -> list[str]:
+        local_out: list[str] = []
+        for addy in addys:
+            d = (data[addy].value)
+            local_out.append(d)
+            self.data_out.append(d)
+        return local_out
 
+    def gen_all_data_addy(self, data:Any) -> None:
+        # for data in self.excel_datas:
+        self.data_out: list[str] = []
+        
+        #building complex column names
+            
+        #complex data
+        # pre_coating_check A7
+        precoat_alpha_range: list[str] = ["B", "D", "F", "J"]#[self.alphabet[i] for i in range(self.alphabet.index("A"), self.alphabet.index("G")+1)]
+        precoat_number_range:list[list[int]] = [[9,14]] * (len(precoat_alpha_range) - 1)
+        precoat_number_range.append([9,11])
+        self.pre_coat_data_addy = self.complex_addy(precoat_alpha_range, precoat_number_range, "A7")
+        self.pre_coat_data = self.get_data(self.pre_coat_data_addy[0][1], data)
+        #Conveyor Furnace Setpoints L7
+        conveyor_alpha_range: list[str] = ["M"]
+        conveyor_number_range:list[list[int]] = [[9,19]]
+        self.conveyor_data_addy = self.complex_addy(conveyor_alpha_range, conveyor_number_range, "L7")
+        self.conveyor_data = self.get_data(self.conveyor_data_addy[0][1], data)
+        #conveyor furnace settings
+        cfs_super = ["A17"]
+        #recipe A18
+        cfs_alpha_range: list[str]= ["B"]
+        cfs_number_range: list[list[int]]= [[19,25]]
+        self.cfs_data_addy = self.complex_addy(cfs_alpha_range, cfs_number_range, "A18")
+        self.cfs_rec_data = self.get_data(self.cfs_data_addy[0][1], data)
+        #N2 flows F18
+        cfs_alpha_range = ["G"]
+        cfs_number_range = [[19,24]]
+        self.cfs_Ntwo_data_addy = self.complex_addy(cfs_alpha_range, cfs_number_range, "F18")
+        self.cfs_Ntwo_data = self.get_data(self.cfs_Ntwo_data_addy[0][1], data)
+        #cart A
+        cartA_super_headers = ["A28"]
+        #exhaustBlower A30
+        eb_alpharange = ["C","D","E","F","G","H"]
+        eb_number_range = [[30,30]] * len(eb_alpharange)
+        self.exhaust_blower_A_data_addy = self.complex_addy(eb_alpharange, eb_number_range, "A30")
+        self.exhaust_blower_A_data = self.get_data(self.exhaust_blower_A_data_addy[0][1], data)
+        #condenser temp L29
+        ct_alpha_range = ["M"]
+        ct_number_range = [[30,31]]
+        self.condenser_temp_A_data_addy = self.complex_addy(ct_alpha_range, ct_number_range, "L29")
+        self.condenser_temp_A_data = self.get_data(self.condenser_temp_A_data_addy[0][1], data)
+        #exhaust_flow  A31
+        af_alpharange = ["C","D","E","F","G","H"]
+        af_number_range =[[30,30]] * len(af_alpharange)
+        self.exhaust_flow_A_data_addy = self.complex_addy(af_alpharange, af_number_range, "A31")
+        self.exhaust_flow_A_data = self.get_data(self.exhaust_flow_A_data_addy[0][1], data)
+        #coater Inlet Mixer B33
+        cim_alpha_range = ["C","D"]
+        cim_number_range = [[34,34]] * len(cim_alpha_range)
+        self.cim_A_data_addy = self.complex_addy(cim_alpha_range, cim_number_range, "B33")
+        self.cim_A_data = self.get_data(self.cim_A_data_addy[0][1], data)
+        #Coater Inlet Line F33
+        cil_alpha_range = ["G","H"]
+        cil_number_range = [[34,34]] * len(cil_alpha_range)
+        self.cil_A_data_addy = self.complex_addy(cil_alpha_range, cil_number_range, "F33")
+        self.cil_A_data = self.get_data(self.cil_A_data_addy[0][1], data)
+        #bypass temp J33
+        bt_alpha_range = ["K","L"]
+        bt_number_range = [[34,34]] * len(bt_alpha_range)
+        self.bypass_temp_A_data_addy = self.complex_addy(bt_alpha_range, bt_number_range, "J33")
+        self.bypass_temp_A_data = self.get_data(self.bypass_temp_A_data_addy[0][1], data)
+        #chemistry A37
+        chem_alpha_range = ["A","B","C","D","E","F","G","I","J","K","L","M","H"]
+        chem_number_range = [[39,43]] * (len(chem_alpha_range) -1)
+        chem_number_range.append([44,44])
+        self.chemistry_A_data_addy = self.complex_addy(chem_alpha_range, chem_number_range, "A37")
+        self.chemistry_A_data = self.get_data(self.chemistry_A_data_addy[0][1], data)
+        #coater Temperature P29
+        ct_alpha_range = ["Q"]
+        ct_number_range = [[30,36]]
+        self.coater_temp_A_data_addy = self.complex_addy(ct_alpha_range, ct_number_range, "P29")
+        self.coater_temp_A_data = self.get_data(self.coater_temp_A_data_addy[0][1], data)
+        #TFE
+        cartA_super_headers.append("P38")
+        #tfe oil jacket Q39
+        tfe_alpha_range = ["Q"]
+        tfe_number_range = [[40,41]]
+        self.tfe_oil_jacket_data_addy = self.complex_addy(tfe_alpha_range, tfe_number_range, "Q39")
+        self.tfe_oil_jacket_data = self.get_data(self.tfe_oil_jacket_data_addy[0][1], data)
+        #tfe line 1 R39
+        tfe_alpha_range = ["R"]
+        tfe_number_range = [[40,41]]
+        self.tfe_line_one_data_addy = self.complex_addy(tfe_alpha_range, tfe_number_range, "R39")
+        self.tfe_line_one_data = self.get_data(self.tfe_line_one_data_addy[0][1], data)
+        #tfe line 2 S39
+        tfe_alpha_range = ["S"]
+        tfe_number_range = [[40,41]]
+        self.tfe_line_two_data_addy = self.complex_addy(tfe_alpha_range, tfe_number_range, "S39")
+        self.tfe_line_two_data = self.get_data(self.tfe_line_two_data_addy[0][1], data)
+        #init comments A47
+        ic_alpha_range = ["A"]    
+        ic_number_range = [[47,47]]
+        # self.ic_comments_A = self.section_to_cols(data, ic_alpha_range, ic_number_range, cartA_super_headers[0], [])
+        #final_comments F47
+        fc_alpha_range = ["F"]
+        fc_number_range = [[47,47]]
+        # self.fc_comments_A = self.section_to_cols(data, fc_alpha_range, fc_number_range, cartA_super_headers[0], [])
+
+        #cartB
+        cartB_super_headers = ["U28"]
+        #exhaustBlower U30
+        eb_alpharange = ["W","X","Y","Z","AA","AB"]
+        eb_number_range = [[29,29]] * len(eb_alpharange)
+        # self.exhaust_blower_B = self.section_to_cols(data, eb_alpharange, eb_number_range, "U30", cartB_super_headers)
+        #condenser temp L29
+        ct_alpha_range = ["L"]
+        ct_number_range = [[30,31]]
+        # self.condenser_temp_B = self.section_to_cols(data, ct_alpha_range, ct_number_range, "L29", cartB_super_headers)
+        #exhaust_flow  A31
+        af_alpharange = ["C","D","E","F","G","H"]
+        af_number_range =[[29,29]] * len(af_alpharange)
+        # self.exhaust_flow_B = self.section_to_cols(data, af_alpharange, af_number_range, "A31", cartB_super_headers)
+        #coater Inlet Mixer B33
+        cim_alpha_range = ["C","D"]
+        cim_number_range = [[33,33]] * len(cim_alpha_range)
+        # self.cim_B = self.section_to_cols(data, cim_alpha_range, cim_number_range, "B33", cartB_super_headers)
+        #Coater Inlet Line F33
+        cil_alpha_range = ["G","H"]
+        cil_number_range = [[33,33]] * len(cil_alpha_range)
+        # self.cil_B = self.section_to_cols(data, cil_alpha_range, cil_number_range, "F33", cartB_super_headers)
+        #bypass temp J33
+        bt_alpha_range = ["K","L"]
+        bt_number_range = [[33,33]] * len(bt_alpha_range)
+        # self.bypass_temp_B = self.section_to_cols(data, bt_alpha_range, bt_number_range, "J33", cartB_super_headers)
+        #chemistry A37
+        chem_alpha_range = ["A","B","C","D","E","F","G","I","J","K","L","M","F"]
+        chem_number_range = [[38,38]] * (len(chem_alpha_range) -1)
+        chem_number_range.append([44,44])
+        # self.chemistry_B = self.section_to_cols(data, chem_alpha_range, chem_number_range, "A37", cartB_super_headers)
+        #coater Temperature P29
+        ct_alpha_range = ["P"]
+        ct_number_range = [[30,36]]
+        # self.coater_temp_B = self.section_to_cols(data, ct_alpha_range, ct_number_range, "P29", cartB_super_headers)
+        #init comments A47
+        ic_alpha_range = ["A"]    
+        ic_number_range = [[47,47]]
+        # self.ic_comments_B = self.section_to_cols(data, ic_alpha_range, ic_number_range, cartB_super_headers[0], [])
+        #final_comments F47
+        fc_alpha_range = ["F"]
+        fc_number_range = [[47,47]]
+        # self.fc_comments_B = self.section_to_cols(data, fc_alpha_range, fc_number_range, cartB_super_headers[0], [])
     
     #endregion
     
-    #region sql server connections
+    #region sql server connections  
     def connect(self) -> None:
         self.sql = pyodbc.connect(
             host=self.server,
@@ -385,8 +535,10 @@ if __name__ == "__main__":
     temp = sql_data_handler("config.json", datas, paths)
     
     temp.connect()
-    temp.build_db()
+    # temp.build_db()
     temp.close()
-    
+
+    temp.gen_all_data_addy(datas[0][0])
+    # temp.get_data(temp.pre_coat_data[0][1],)
     
 #end region
