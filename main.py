@@ -337,17 +337,17 @@ class sql_data_handler():
             self.cursor.execute(query)
         self.cursor.commit()
     
-    def build_db(self):
+    def execute(self):
         i = 0
         for data in self.excel_datas: 
             for sheet in data:
                 self.gen_all_cols(sheet)
                 self.build_table(sheet)
                 self.build_cols()
-            self.move_file(self.paths[i])
-            i += 1
-            # print(self.col_names)
-    
+                self.gen_all_data_addy(sheet)
+            # self.move_file(self.paths[i])
+            i += 1  
+        
     #endregion
     
     #region data processing
@@ -542,13 +542,15 @@ if __name__ == "__main__":
             path = os.path.join("to_process",file)
             paths.append(path)
             if ".xlsx" in file: datas.append(read_excel(path))
-    temp = sql_data_handler("config.json", datas, paths)
-    
-    temp.connect()
-    # temp.build_db()
-    temp.close()
+    temp = sql_data_handler("config.json", [datas[0]], [paths[0]])
 
-    temp.gen_all_data_addy(datas[0][0])
-    # temp.get_data(temp.pre_coat_data[0][1],)
+    temp.connect()
+    temp.execute()
+    temp.close()
+    
+    i = 0
+    for col in temp.col_names:
+        print(f"{i}: {col} {temp.data_out[i]}")
+        i += 1
     
 #end region
