@@ -358,6 +358,11 @@ class sql_data_handler():
             local_out.append(d)
             self.data_out.append(d)
         return local_out
+    
+    def get_comments(self, comments:str) -> str:
+        out = [x for x in comments.split("\n") if x != ""][1:]
+        comment = ("; ").join(out)
+        return comment
 
     def gen_all_data_addy(self, data:Any) -> None:
         # for data in self.excel_datas:
@@ -452,10 +457,13 @@ class sql_data_handler():
         #init comments A47
         ic_alpha_range = ["A"]    
         ic_number_range = [[47,47]]
+        self.ic_comments_A_data = self.get_comments(data[self.complex_addy(ic_alpha_range, ic_number_range, "A47")[0][1][0]].value)
+        
         # self.ic_comments_A = self.section_to_cols(data, ic_alpha_range, ic_number_range, cartA_super_headers[0], [])
         #final_comments F47
         fc_alpha_range = ["F"]
         fc_number_range = [[47,47]]
+        self.fc_comments_A_data = self.get_comments(data[self.complex_addy(fc_alpha_range, fc_number_range, "F47")[0][1][0]].value)
         # self.fc_comments_A = self.section_to_cols(data, fc_alpha_range, fc_number_range, cartA_super_headers[0], [])
 
         #cartB
