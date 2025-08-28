@@ -35,7 +35,6 @@ def read_excel(excel_path: str) -> list[Any]:
 
 #endregion
 #region Class
-
 class sql_data_handler():
     #region setup
     def __init__(self, config: str, datas: list[list[Any]], paths: list[str]) -> None:
@@ -46,7 +45,6 @@ class sql_data_handler():
         self.col_names: list[str] = []
         self.cursor: pyodbc.Cursor
         self.server = ""
-        self.alphabet = [chr(i) for i in range(ord('A'), ord('Z')+1)]
         self.database = ""
         self.username = ""
         self.password = ""
@@ -54,6 +52,14 @@ class sql_data_handler():
         self.trust_server_certificate = "yes"
         self.encrypt = "yes"
         self.timeout = 30
+        
+        
+        self.chem_data: list[list[str]] = []
+        self.chemistry_A_data: list[str] = []
+        self.chemistry_B_data: list[str] = []
+
+        self.alphabet = [chr(i) for i in range(ord('A'), ord('Z')+1)]
+
         self.excel_datas = datas
         
         self.read_config()
@@ -72,8 +78,7 @@ class sql_data_handler():
     #endregion
     
     #reguib sql and excel utils
-    
-    
+  
     def section_to_cols(self,  data: Any, alpha_range:list[str], number_range:list[list[int]], header:str, super_header_loc:list[str] = []) -> list[str]:
         complex_loc_locations = self.complex_addy(alpha_range, number_range, header)
         col_names = self.gen_col_names(data, complex_loc_locations, super_header_loc)
@@ -120,7 +125,7 @@ class sql_data_handler():
 
         return complex_col_name_locations
     
-    def table_query_builder(self, table_name:str, cols:list[str], data_types:list[str]) -> str:
+    def table_query_builder(self, table_name:str, cols:list[str], data_types:list[str]) -> None:
         """
         Builds a SQL CREATE TABLE query string for the specified table name, columns, and data types.
         Args:
@@ -147,7 +152,22 @@ class sql_data_handler():
 
         return query
 
-    
+    def write(self):
+        query = f"INSERT INTO {self.table_name}("
+        end = "("
+        query_list = [f"\"{x}\"" for x in self.col_names if x not in self.chemistry_A and x not in self.chemistry_B]
+        query_str = (',').join(query_list)
+        query += query_str + ") "
+        end_list = [f"\'{x}\'" for x in self.data_out]
+        end = (',').join(end_list)
+        end = "(" + end + ")"
+        query += " VALUES " + end 
+        print(self.exhaust_blower_A_data)
+        print(self.exhaust_blower_B_data)
+        # print(self.chem_data)
+        # self.cursor.execute(query)
+        # self.sql.commit()
+
     #endregion
     
     #region file management
@@ -217,8 +237,8 @@ class sql_data_handler():
         chem_number_range.append([44,44])
         self.chemistry_A = self.section_to_cols(data, chem_alpha_range, chem_number_range, "A37", cartA_super_headers)
         #coater Temperature P29
-        ct_alpha_range = ["P"]
-        ct_number_range = [[30,36]]
+        ct_alpha_range = ["P","P"]
+        ct_number_range = [[30,34],[36,36]]
         self.coater_temp_A = self.section_to_cols(data, ct_alpha_range, ct_number_range, "P29", cartA_super_headers)
         #TFE
         cartA_super_headers.append("P38")
@@ -243,7 +263,7 @@ class sql_data_handler():
         fc_number_range = [[47,47]]
         self.fc_comments_A = self.section_to_cols(data, fc_alpha_range, fc_number_range, cartA_super_headers[0], [])
 
-        #cartB
+        #cart B
         cartB_super_headers = ["U28"]
         #exhaustBlower U30
         eb_alpharange = ["W","X","Y","Z","AA","AB"]
@@ -275,8 +295,8 @@ class sql_data_handler():
         chem_number_range.append([44,44])
         self.chemistry_B = self.section_to_cols(data, chem_alpha_range, chem_number_range, "A37", cartB_super_headers)
         #coater Temperature P29
-        ct_alpha_range = ["P"]
-        ct_number_range = [[30,36]]
+        ct_alpha_range = ["P","P"]
+        ct_number_range = [[30,34],[36,36]]
         self.coater_temp_B = self.section_to_cols(data, ct_alpha_range, ct_number_range, "P29", cartB_super_headers)
         #init comments A47
         ic_alpha_range = ["A"]    
@@ -340,30 +360,42 @@ class sql_data_handler():
     def execute(self):
         i = 0
         for data in self.excel_datas: 
+            self.chem_data = []
             for sheet in data:
                 self.gen_all_cols(sheet)
                 self.build_table(sheet)
                 self.build_cols()
                 self.gen_all_data_addy(sheet)
+                self.write()
+                
             # self.move_file(self.paths[i])
             i += 1  
         
     #endregion
     
     #region data processing
-    def get_data(self, addys: list[str], data:Any) -> list[str]:
+    def get_data(self, addys: list[str], data:Any, chem:bool = False) -> list[str]:
         local_out: list[str] = []
         for addy in addys:
             d = (data[addy].value)
             local_out.append(d)
-            self.data_out.append(d)
+            if not chem:
+                self.data_out.append(d)
+        if chem:
+            # if len(self.chemistry_A_data) != 0:
+            self.chem_data.append(local_out)
         return local_out
     
-    def get_comments(self, comments:str) -> str:
-        out = [x for x in comments.split("\n") if x != ""][1:]
-        comment = ("; ").join(out)
-        self.data_out.append(comment)
-        return comment
+    def get_comments(self, comments:str|None) -> str:
+        if comments != None:
+            temp = [x for x in comments.split("\n") if x != ""]
+            out = [x for x in temp if "Initial Comments" not in x and "Final Comments" not in x]
+            comment = ("; ").join(out)
+            self.data_out.append(comment)
+            return comment
+        else:
+            self.data_out.append("")
+            return ""
 
     def gen_all_data_addy(self, data:Any) -> None:
         # for data in self.excel_datas:
@@ -402,6 +434,9 @@ class sql_data_handler():
         eb_number_range = [[30,30]] * len(eb_alpharange)
         self.exhaust_blower_A_data_addy = self.complex_addy(eb_alpharange, eb_number_range, "A30")
         self.exhaust_blower_A_data = self.get_data(self.exhaust_blower_A_data_addy[0][1], data)
+        cut = len(self.exhaust_blower_A) - len(self.exhaust_blower_A_data)
+        if cut < 0: 
+            self.data_out = self.data_out[:cut]
         #condenser temp L29
         ct_alpha_range = ["M"]
         ct_number_range = [[30,31]]
@@ -409,9 +444,12 @@ class sql_data_handler():
         self.condenser_temp_A_data = self.get_data(self.condenser_temp_A_data_addy[0][1], data)
         #exhaust_flow  A31
         af_alpharange = ["C","D","E","F","G","H"]
-        af_number_range =[[30,30]] * len(af_alpharange)
+        af_number_range =[[31,31]] * len(af_alpharange)
         self.exhaust_flow_A_data_addy = self.complex_addy(af_alpharange, af_number_range, "A31")
         self.exhaust_flow_A_data = self.get_data(self.exhaust_flow_A_data_addy[0][1], data)
+        cut = len(self.exhaust_flow_A) - len(self.exhaust_flow_A_data)
+        if cut < 0: 
+            self.data_out = self.data_out[:cut]
         #coater Inlet Mixer B33
         cim_alpha_range = ["C","D"]
         cim_number_range = [[34,34]] * len(cim_alpha_range)
@@ -432,10 +470,10 @@ class sql_data_handler():
         chem_number_range = [[39,43]] * (len(chem_alpha_range) -1)
         chem_number_range.append([44,44])
         self.chemistry_A_data_addy = self.complex_addy(chem_alpha_range, chem_number_range, "A37")
-        self.chemistry_A_data = self.get_data(self.chemistry_A_data_addy[0][1], data)
+        self.chemistry_A_data = self.get_data(self.chemistry_A_data_addy[0][1], data, True) 
         #coater Temperature P29
-        ct_alpha_range = ["Q"]
-        ct_number_range = [[30,36]]
+        ct_alpha_range = ["Q","Q"]
+        ct_number_range = [[30,34],[36,36]]
         self.coater_temp_A_data_addy = self.complex_addy(ct_alpha_range, ct_number_range, "P29")
         self.coater_temp_A_data = self.get_data(self.coater_temp_A_data_addy[0][1], data)
         #TFE
@@ -457,23 +495,24 @@ class sql_data_handler():
         self.tfe_line_two_data = self.get_data(self.tfe_line_two_data_addy[0][1], data)
         #init comments A47
         ic_alpha_range = ["A"]    
-        ic_number_range = [[47,47]]
+        ic_number_range = [[48,48]]
         self.ic_comments_A_data = self.get_comments(data[self.complex_addy(ic_alpha_range, ic_number_range, "A47")[0][1][0]].value)
         
         # self.ic_comments_A = self.section_to_cols(data, ic_alpha_range, ic_number_range, cartA_super_headers[0], [])
         #final_comments F47
         fc_alpha_range = ["F"]
-        fc_number_range = [[47,47]]
+        fc_number_range = [[48,48]]
         self.fc_comments_A_data = self.get_comments(data[self.complex_addy(fc_alpha_range, fc_number_range, "F47")[0][1][0]].value)
         # self.fc_comments_A = self.section_to_cols(data, fc_alpha_range, fc_number_range, cartA_super_headers[0], [])
 
-        #cartB
-        cartB_super_headers = ["U28"]
+        #cart B
         #exhaustBlower U30
         eb_alpharange = ["W","X","Y","Z","AA","AB"]
         eb_number_range = [[30,30]] * len(eb_alpharange)
         self.exhaust_blower_B_data = self.get_data(self.complex_addy(eb_alpharange, eb_number_range, "U30")[0][1], data)
-        # self.exhaust_blower_B = self.section_to_cols(data, eb_alpharange, eb_number_range, "U30", cartB_super_headers)
+        cut = len(self.exhaust_blower_B) - len(self.exhaust_blower_B_data)
+        if cut < 0: 
+            self.data_out = self.data_out[:cut]
         #condenser temp L29
         ct_alpha_range = ["AG"]
         ct_number_range = [[30,31]]
@@ -482,6 +521,9 @@ class sql_data_handler():
         af_alpharange = ["W","X","Y","Z","AA","AB"]
         af_number_range =[[30,30]] * len(af_alpharange)
         self.exhaust_flow_B_data = self.get_data(self.complex_addy(af_alpharange, af_number_range, "U31")[0][1], data)
+        cut = len(self.exhaust_flow_B) - len(self.exhaust_flow_B_data)
+        if cut < 0:
+            self.data_out = self.data_out[:cut]
         #coater Inlet Mixer V33
         cim_alpha_range = ["W","X"]
         cim_number_range = [[34,34]] * len(cim_alpha_range)
@@ -498,18 +540,19 @@ class sql_data_handler():
         chem_alpha_range = ["U","V","W","X","Y","Z","AA","AB","AC","AD","AE","AF","AG"]
         chem_number_range = [[39,43]] * (len(chem_alpha_range) -1)
         chem_number_range.append([45,45])
-        self.chemistry_B_data = self.get_data(self.complex_addy(chem_alpha_range, chem_number_range, "U37")[0][1], data)
+        self.chemistry_B_data = self.get_data(self.complex_addy(chem_alpha_range, chem_number_range, "U37")[0][1], data, True)
         #coater Temperature P29
-        ct_alpha_range = ["AK"]
-        ct_number_range = [[30,36]]
+        ct_alpha_range = ["AK","AK"]
+        ct_number_range = [[30,34],[36,36]]
         self.coater_temp_B_data = self.get_data(self.complex_addy(ct_alpha_range, ct_number_range, "AK30")[0][1], data)
         #init comments A47
         ic_alpha_range = ["U"]    
-        ic_number_range = [[47,47]]
+        ic_number_range = [[48,48]]
         self.ic_comments_B_data = self.get_comments(data[self.complex_addy(ic_alpha_range, ic_number_range, "U47")[0][1][0]].value)
         #final_comments F47
         fc_alpha_range = ["Z"]
-        fc_number_range = [[47,47]]
+        fc_number_range = [[48,48]]
+        print(data[self.complex_addy(fc_alpha_range, fc_number_range, "Z47")[0][1][0]].value)
         self.fc_comments_B_data = self.get_comments(data[self.complex_addy(fc_alpha_range, fc_number_range, "Z47")[0][1][0]].value)
 
     #endregion
@@ -549,8 +592,6 @@ if __name__ == "__main__":
     temp.close()
     
     i = 0
-    for col in temp.col_names:
-        print(f"{i}: {col} {temp.data_out[i]}")
-        i += 1
+
     
 #end region
