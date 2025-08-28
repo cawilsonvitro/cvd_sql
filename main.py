@@ -175,7 +175,7 @@ class sql_data_handler():
     def write(self):
         chem_A_Data = self.pull_chem_data(self.chemistry_A, self.chem_data[0])
         chem_B_Data = self.pull_chem_data(self.chemistry_B, self.chem_data[1])
-        query = f"INSERT INTO {self.table_name}("
+        query = f"INSERT INTO \"{self.table_name}\"("
         end = "("
         query_list = [f"\"{x}\"" for x in self.col_names if x not in self.chemistry_A and x not in self.chemistry_B]
         for name in self.col_names_basic:
@@ -404,7 +404,7 @@ class sql_data_handler():
                 self.gen_all_data_addy(sheet)
                 self.write()
                 
-            # self.move_file(self.paths[i])
+            self.move_file(self.paths[i])
             i += 1  
         
     #endregion
@@ -621,7 +621,7 @@ if __name__ == "__main__":
             path = os.path.join("to_process",file)
             paths.append(path)
             if ".xlsx" in file: datas.append(read_excel(path))
-    temp = sql_data_handler("config.json", [datas[0]], [paths[0]])
+    temp = sql_data_handler("config.json", datas, paths)
 
     temp.connect()
     temp.execute()
