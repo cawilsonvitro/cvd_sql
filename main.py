@@ -152,21 +152,55 @@ class sql_data_handler():
 
         return query
 
+    def pull_chem_data(self, chem_col: list[str], chem_data: list[str|None]) -> list[list[str]]:
+        cols:list[str] = []
+        data:list[list[str]] = []
+
+        i = 0
+        for chem in chem_col:
+            cols.append(chem)
+            if "TotalVaporizerCarrierGasFlow" not in chem:
+                temp:list[str] = []
+                for point in chem_data[i * 5:(i+1) * 5]:
+                    if point != None: temp.append(str(point))
+                    else: temp.append("No Value")
+                data.append(temp)
+            else:
+                if chem_data[-1] != None: data.append([chem_data[-1]])
+                else: data.append([""])
+            i += 1
+        
+        return data
+    
     def write(self):
+        chem_A_Data = self.pull_chem_data(self.chemistry_A, self.chem_data[0])
+        chem_B_Data = self.pull_chem_data(self.chemistry_B, self.chem_data[1])
         query = f"INSERT INTO {self.table_name}("
         end = "("
         query_list = [f"\"{x}\"" for x in self.col_names if x not in self.chemistry_A and x not in self.chemistry_B]
+        for name in self.col_names_basic:
+            query_list.append(f"\"{name}\"")
+        for chem in self.chemistry_A:
+            query_list.append(f"\"{chem}\"")
+        for chem in self.chemistry_B:
+            query_list.append(f"\"{chem}\"")
         query_str = (',').join(query_list)
         query += query_str + ") "
         end_list = [f"\'{x}\'" for x in self.data_out]
+        for point in self.data_basic:
+            end_list.append(f"\'{point}\'")
+        for chem in chem_A_Data:
+            chem_str = (',').join(chem)
+            end_list.append(f"\'{chem_str}\'")
+        for chem in chem_B_Data:
+            chem_str = (',').join(chem)
+            end_list.append(f"\'{chem_str}\'")
         end = (',').join(end_list)
         end = "(" + end + ")"
         query += " VALUES " + end 
-        print(self.exhaust_blower_A_data)
-        print(self.exhaust_blower_B_data)
-        # print(self.chem_data)
-        # self.cursor.execute(query)
-        # self.sql.commit()
+
+        self.cursor.execute(query)
+        self.sql.commit()
 
     #endregion
     
@@ -309,25 +343,27 @@ class sql_data_handler():
         
     def build_table(self, data:Any):
         # for data in self.excel_datas:
-        col_names: list[str] = []
+        self.col_names_basic: list[str] = []
         sample:Any = data["I3"].value #type:ignore
         run:Any = data["N3"].value #type:ignore
         self.table_name:str = f"cvd_{sample}_{run}"
         data_holder = self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'")
         self.tables = [x[2] for x in data_holder]
-        col_name_locations:list[str] = ["A3", "H3", "M3", "A5", "H5"]
-        col_names = [data[loc].value for loc in col_name_locations]
+        col_name_basic_addy:list[str] = ["A3", "H3", "M3", "A5", "H5"]
+        col_data_basic_addy:list[str] = ["B2", "I3", "N3", "B5", "I5"]
+        self.col_names_basic = [data[loc].value for loc in col_name_basic_addy]
+        self.data_basic = [data[loc].value for loc in col_data_basic_addy]
         i = 0
-        for col in col_names:
+        for col in self.col_names_basic:
             if col[-1] == " ": 
                 col = col[:-1]
             col = col.replace(" ","_")
             col = col.replace(":","")
-            col_names[i] = col
+            self.col_names_basic[i] = col
             i += 1
         col_data_types:list[str] = ["VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)", "VARCHAR(255)"]
 
-        table_query =self.table_query_builder(self.table_name, col_names, col_data_types) 
+        table_query =self.table_query_builder(self.table_name, self.col_names_basic, col_data_types) 
 
         if self.table_name not in self.tables:
             self.cursor.execute(table_query)
