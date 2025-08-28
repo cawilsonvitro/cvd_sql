@@ -1,5 +1,4 @@
 #region imports
-from re import S
 import shutil
 import pyodbc
 import json
@@ -125,7 +124,7 @@ class sql_data_handler():
 
         return complex_col_name_locations
     
-    def table_query_builder(self, table_name:str, cols:list[str], data_types:list[str]) -> None:
+    def table_query_builder(self, table_name:str, cols:list[str], data_types:list[str]) -> str:
         """
         Builds a SQL CREATE TABLE query string for the specified table name, columns, and data types.
         Args:
@@ -173,8 +172,8 @@ class sql_data_handler():
         return data
     
     def write(self):
-        chem_A_Data = self.pull_chem_data(self.chemistry_A, self.chem_data[0])
-        chem_B_Data = self.pull_chem_data(self.chemistry_B, self.chem_data[1])
+        chem_A_Data = self.pull_chem_data(self.chemistry_A, self.chem_data[0]) #type:ignore
+        chem_B_Data = self.pull_chem_data(self.chemistry_B, self.chem_data[1]) #type:ignore
         query = f"INSERT INTO \"{self.table_name}\"("
         end = "("
         query_list = [f"\"{x}\"" for x in self.col_names if x not in self.chemistry_A and x not in self.chemistry_B]
@@ -452,7 +451,6 @@ class sql_data_handler():
         self.conveyor_data_addy = self.complex_addy(conveyor_alpha_range, conveyor_number_range, "L7")
         self.conveyor_data = self.get_data(self.conveyor_data_addy[0][1], data)
         #conveyor furnace settings
-        cfs_super = ["A17"]
         #recipe A18
         cfs_alpha_range: list[str]= ["B"]
         cfs_number_range: list[list[int]]= [[19,25]]
@@ -612,6 +610,7 @@ class sql_data_handler():
     
 #region entry point
 if __name__ == "__main__":
+    
 
     paths:list[str] = []
     datas:list[list[Any]] = []
