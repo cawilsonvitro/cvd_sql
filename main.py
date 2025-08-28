@@ -5,6 +5,7 @@ import json
 from openpyxl import load_workbook
 from typing import Any
 import os
+import sys
 #endregion
 
 
@@ -31,6 +32,20 @@ def read_excel(excel_path: str) -> list[Any]:
         for sheet in sheets:
             data.append(wb[sheet]) 
     return data
+
+def get_exe_location():
+    """
+    Returns the absolute path to the compiled executable.
+    """
+    if getattr(sys, 'frozen', False):
+        # Running in a PyInstaller bundle
+        return os.path.dirname(sys.executable)
+    else:
+        # Running as a regular Python script
+        return os.path.dirname(os.path.abspath(__file__))
+
+exe_path = get_exe_location()
+print(f"The executable is located at: {exe_path}")
 
 #endregion
 #region Class
@@ -392,18 +407,20 @@ class sql_data_handler():
             self.cursor.execute(query)
         self.cursor.commit()
     
-    def execute(self):
+    def execute(self, protocol: list[str]):
         i = 0
         for data in self.excel_datas: 
             self.chem_data = []
             for sheet in data:
                 self.gen_all_cols(sheet)
-                self.build_table(sheet)
-                self.build_cols()
-                self.gen_all_data_addy(sheet)
-                self.write()
-                
-            self.move_file(self.paths[i])
+                if "build DB" in protocol:
+                   self.build_table(sheet)
+                   self.build_cols()
+                if "write" in protocol:
+                    self.gen_all_data_addy(sheet)
+                    self.write()
+            if "no move" not in protocol:
+                self.move_file(self.paths[i])
             i += 1  
         
     #endregion
@@ -610,7 +627,10 @@ class sql_data_handler():
     
 #region entry point
 if __name__ == "__main__":
-    
+    cwd = os.getcwd()
+    if str(cwd).lower() != str(exe_path).lower():
+        os.chdir(exe_path)
+        print(f"Changed working directory to: {os.getcwd()}")
 
     paths:list[str] = []
     datas:list[list[Any]] = []
@@ -621,9 +641,9 @@ if __name__ == "__main__":
             paths.append(path)
             if ".xlsx" in file: datas.append(read_excel(path))
     temp = sql_data_handler("config.json", datas, paths)
-
+    args = sys.argv[1:]
     temp.connect()
-    temp.execute()
+    temp.execute(args)
     temp.close()
     
     i = 0
