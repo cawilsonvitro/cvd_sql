@@ -19,11 +19,11 @@ jobs:
         run: pip install pyinstaller
 
       - name: Build Executable
-        run: pyinstaller --onefile main.py # Replace with your build command
+        run: pyinstaller main.py --onefile # Replace with your build command
 
       - name: Upload Executable to Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/') # Only create release on tag pushes
         with:
-          files: exe/main.exe # Path to your compiled executable
+          files: test/main.exe # Path to your compiled executable
           prerelease: false # Set to true for pre-release versions

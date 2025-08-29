@@ -13,3 +13,26 @@ The build_table method creates a new SQL table for each Excel sheet, using speci
 Database connections are managed with the connect and close methods, which open and close the connection using the parameters loaded from the configuration file. The script’s entry point (if __name__ == "__main__":) walks through the "to_process" directory, reads all Excel files, initializes the sql_data_handler, connects to the database, processes the files, and then closes the connection.
 
 Overall, this script provides a flexible and automated way to import structured data from Excel files into a SQL Server database, with configurable connection settings and robust handling of complex Excel layouts.
+
+
+
+## usage
+
+
+```bash
+excel2sql <your command here>
+```
+
+commands = builddb,write,nomove
+
+write-outputs all data in files in processed and then moves files to to_processed
+builddb-should only be ran on the sql computer, builds the db from a sample execel sheet left in the data folder
+must have one file into to run
+nomove-will not move the files
+below is an example to both build the db and get the data
+```bash
+excel2sql builddb write
+```
+order does not matter the code will always build the db first then write then move or not move files.
+
+please look at the config_def.json and enter the info required into it

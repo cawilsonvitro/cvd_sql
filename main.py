@@ -358,9 +358,6 @@ class sql_data_handler():
     def build_table(self, data:Any):
         # for data in self.excel_datas:
         self.col_names_basic: list[str] = []
-        sample:Any = data["I3"].value #type:ignore
-        run:Any = data["N3"].value #type:ignore
-        self.table_name:str = f"cvd_{sample}_{run}"
         data_holder = self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'")
         self.tables = [x[2] for x in data_holder]
         col_name_basic_addy:list[str] = ["A3", "H3", "M3", "A5", "H5"]
@@ -412,14 +409,17 @@ class sql_data_handler():
         for data in self.excel_datas: 
             self.chem_data = []
             for sheet in data:
+                sample:Any = sheet["I3"].value #type:ignore
+                run:Any = sheet["N3"].value #type:ignore
+                self.table_name:str = f"cvd_{sample}_{run}"
                 self.gen_all_cols(sheet)
-                if "build DB" in protocol:
+                if "buildDB" in protocol:
                    self.build_table(sheet)
                    self.build_cols()
                 if "write" in protocol:
                     self.gen_all_data_addy(sheet)
                     self.write()
-            if "no move" not in protocol:
+            if "nomove" not in protocol:
                 self.move_file(self.paths[i])
             i += 1  
         
