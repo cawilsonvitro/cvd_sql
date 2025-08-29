@@ -1,29 +1,32 @@
-name: Build and Release Executable
+trigger: none
 
-on:
-  push:
-     branches: [ "main" ]
+pool:
+  vmImage: windows-latest
+strategy:
+  matrix:
+    Python310:
+      python.version: '3.10'
 
-jobs:
-  build:
-    runs-on: windows-latest # Or ubuntu-latest, macos-latest depending on target OS
-    steps:
-      - uses: actions/checkout@v4 # Check out the repository
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '$(python.version)'
+  displayName: 'Use Python $(python.version)'
 
-      - name: Setup Build Environment # Example for Python with PyInstaller
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
+- script: |
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+  displayName: 'Install dependencies'
 
-      - name: Install Dependencies
-        run: pip install pyinstaller
+- script: |
+    pyinstaller --onedir VGEM.py --icon Image\VitroLogo.ico --add-data "Image\*;."
+  displayName: 'pyinstaller'
 
-      - name: Build Executable
-        run: pyinstaller --onefile main.py # Replace with your build command
-
-      - name: Upload Executable to Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/') # Only create release on tag pushes
-        with:
-          files: dist/main.exe # Path to your compiled executable
-          prerelease: false # Set to true for pre-release versions
+- task: CopyFiles@2
+  inputs:
+    contents: './dist/**'
+    targetFolder: 'D:\a\1\s\dist\'
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathToPublish: $(Build.Repository.LocalPath)
+    artifactName: MyBuildOutputs
