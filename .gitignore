@@ -222,3 +222,5 @@ secrets.json
 *.xlw
 *.xlr
 *.csv
+
+!template.xlsx
