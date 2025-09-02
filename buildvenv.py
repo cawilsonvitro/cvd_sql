@@ -39,16 +39,16 @@ def venv_builder(req = "constraints.txt") -> None:
     cwd = os.getcwd()
     venv_path = os.path.join(cwd, '.venv') 
     if not os.path.exists(venv_path):
-        for line in lines:
-            stripped = line.strip()
-            if "delcom" in stripped:
-                stripped = "delcom @ file:///" + os.path.join(cwd,"install_files","delcom-0.1.1-py3-none-any.whl")
-            if stripped != "":
-                stripped_lines.append(stripped)
+        # for line in lines:
+        #     stripped = line.strip()
+        #     if "delcom" in stripped:
+        #         stripped = "delcom @ file:///" + os.path.join(cwd,"install_files","delcom-0.1.1-py3-none-any.whl")
+        #     if stripped != "":
+        #         stripped_lines.append(stripped)
 
-        with open(req_file, "w") as f:
-            for line in stripped_lines:
-                f.write("\n" + line)
+        # with open(req_file, "w") as f:
+        #     for line in stripped_lines:
+        #         f.write("\n" + line)
 
         venv.create(venv_path, with_pip=True, clear=True)
         
@@ -59,7 +59,7 @@ def venv_builder(req = "constraints.txt") -> None:
         pip = os.path.join(script, 'pip.exe')
         
 
-        install = f"{py} {pip} install -r constraints.txt"
+        install = f"{py} {pip} install -r requirements.txt"
 
         os.system(install)
 

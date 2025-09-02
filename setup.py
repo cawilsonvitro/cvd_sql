@@ -45,21 +45,21 @@ def get_exe_location():
 # variable_value = exe_loc + "\\" + main_exe
 
 
-os.environ["Path"] = "test"
+# os.environ["Path"] = "test"
 
 
 
 
 
-#setting up json
-# with open('config_def.json', 'r') as f:
-#     config = json.load(f)
+# setting up json
+with open('config_def.json', 'r') as f:
+    config = json.load(f)
     
-# config['Database_Config']['host'] = input("Enter your host (default is localhost): ")
-# config['Database_Config']['db'] = input("Enter your database name (default is cvd_test): ")
-# config['Database_Config']['username'] = input("Enter your username for the database: ")
-# config['Database_Config']['password'] = input("Enter your password for the database: ")
+config['Database_Config']['host'] = input("Enter your host (default is localhost): ")
+config['Database_Config']['db'] = input("Enter your database name (default is cvd_test): ")
+config['Database_Config']['username'] = input("Enter your username for the database: ")
+config['Database_Config']['password'] = input("Enter your password for the database: ")
 
-# with open('config.json', 'w') as f:
-#     json.dump(config, f, indent=4)
+with open('config.json', 'w') as f:
+    json.dump(config, f, indent=4)
 

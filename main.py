@@ -417,6 +417,8 @@ class sql_data_handler():
                    self.build_table(sheet)
                    self.build_cols()
                 if "write" in protocol:
+                    self.build_table(sheet)
+                    self.build_cols()
                     self.gen_all_data_addy(sheet)
                     self.write()
             if "nomove" not in protocol:
@@ -634,14 +636,18 @@ if __name__ == "__main__":
 
     paths:list[str] = []
     datas:list[list[Any]] = []
-    
+    paths = []
     for _,_,files in os.walk("to_process"):
         for file in files:
-            path = os.path.join("to_process",file)
-            paths.append(path)
-            if ".xlsx" in file: datas.append(read_excel(path))
+            if ".gitkeep" not in file:
+                path = os.path.join("to_process",file)
+                paths.append(path)
+                if ".xlsx" in file: datas.append(read_excel(path))
     temp = sql_data_handler("config.json", datas, paths)
-    args = sys.argv[1:]
+    # args = sys.argv[1:]
+    #for testing
+    args = ["write", "nomove"]
+    
     temp.connect()
     temp.execute(args)
     temp.close()
