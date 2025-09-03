@@ -14,31 +14,44 @@ def get_exe_location():
         # Running as a regular Python script
         return os.path.dirname(os.path.abspath(__file__))
 
-exe_loc = get_exe_location().split(os.sep)
+# exe_loc = get_exe_location().split(os.sep)
 
-exe_loc = os.sep.join(exe_loc[:-1]) 
-main_exe = "excel2sql.exe"
-print(exe_loc)
-#setting up env
-key_path = "Environment"
-root_key = winreg.HKEY_CURRENT_USER
-try:
-    key = winreg.OpenKey(root_key, key_path, 0, winreg.KEY_SET_VALUE)
-except OSError as e:
-    key = ""
-    print(f"Error opening registry key: {e}")
-    # Handle cases where administrative privileges are required for system variables
+# exe_loc = os.sep.join(exe_loc) 
+# main_exe = "excel2sql.exe"
+# print("exe location:", exe_loc)
+# #setting up env
+# key_path = "Environment"
+# root_key = winreg.HKEY_CURRENT_USER
+# try:
+#     variable_name = "Path"
+#     key = winreg.OpenKey(root_key, key_path, 0, winreg.KEY_SET_VALUE | winreg.KEY_READ | winreg.KEY_WRITE)
+#     current_path, reg_type = winreg.QueryValueEx(key, variable_name)
+#     new_path_to_add = exe_loc + "\\"
+    
+#     if new_path_to_add not in current_path:
+#         updated_path = current_path + ";" + new_path_to_add
+#         print(updated_path)
+#         winreg.SetValueEx(key, variable_name, 0, reg_type, updated_path)
+#     # key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path, 0, winreg.KEY_READ | winreg.KEY_WRITE)
+# except OSError as e:
+#     key = ""
+#     print(f"Error opening registry key: {e}")
+#     # Handle cases where administrative privileges are required for system variables
 
-print(key)
-
-
-variable_name = "excel2sql"
-variable_value = exe_loc + "\\" + main_exe
-winreg.SetValueEx(key, variable_name, 0, winreg.REG_SZ, variable_value)
+# print(key)
 
 
 
-#setting up json
+# variable_value = exe_loc + "\\" + main_exe
+
+
+# os.environ["Path"] = "test"
+
+
+
+
+
+# setting up json
 with open('config_def.json', 'r') as f:
     config = json.load(f)
     
