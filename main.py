@@ -206,7 +206,8 @@ class sql_data_handler():
             query_list.append(f"[{chem}]")
         query_str = (',').join(query_list)
         query += query_str + ") "
-        end_list = [f"\'{x}\'" for x in self.data_out]
+        end_list = [str(x).replace("\'","") for x in self.data_out]
+        end_list = [f"\'{x}\'" for x in end_list]
         for point in self.data_basic:
             end_list.append(f"\'{point}\'")
         for chem in chem_A_Data:
@@ -644,7 +645,7 @@ if __name__ == "__main__":
 
     paths:list[str] = []
     datas:list[list[Any]] = []
-    # paths = [r"I:\Morgano\CVD Runsheets",
+    paths = [#r"I:\Morgano\CVD Runsheets",
         #  r"I:\Curtis\CVD Run Sheet",
         #  r"I:\Gotera\CVD Data",
         #  r"I:\Zele\Backup\CVD Project\SierraRunsheets\2025\May 2025",
@@ -655,12 +656,12 @@ if __name__ == "__main__":
 
     for path in paths:
         for file in os.listdir(path):
-            
-            # if "runsheet" in file.lower():
-            if os.path.join(path, file) not in wb_paths:
-                wb_paths.append(os.path.join(path, file))   
-                print(os.path.join(path, file))
-                if ".xlsx" in file: datas.append(read_excel(os.path.join(path, file)))
+
+            if "runsheet" in file.lower():
+                if os.path.join(path, file) not in wb_paths:
+                    wb_paths.append(os.path.join(path, file))   
+                    print(os.path.join(path, file))
+                    if ".xlsx" in file: datas.append(read_excel(os.path.join(path, file)))
 
                     
         # for _,_,files in os.walk("to_process"):
