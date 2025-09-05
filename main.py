@@ -192,7 +192,7 @@ class sql_data_handler():
         return data
     
     def write(self):
-        print("I'm writing it")
+        # print("I'm writing it")
         chem_A_Data = self.pull_chem_data(self.chemistry_A, self.chem_data[0]) #type:ignore
         chem_B_Data = self.pull_chem_data(self.chemistry_B, self.chem_data[1]) #type:ignore
         query = f"INSERT INTO \"{self.table_name}\" ("
@@ -219,7 +219,7 @@ class sql_data_handler():
         end = (',').join(end_list)
         end = "(" + end + ")"
         query += " VALUES " + end
-        print(query)
+        # print(query)
         self.cursor.execute(query)
         self.sql.commit()
 
@@ -230,7 +230,7 @@ class sql_data_handler():
         done_dir = "processed"
         sheet_path = os.path.basename(cur_dir)
         dest_dir = os.path.join(done_dir, sheet_path)
-        print(dest_dir)
+        # print(dest_dir)
         shutil.move(cur_dir, dest_dir)
     #endregion
     #region excel to sql
@@ -393,7 +393,7 @@ class sql_data_handler():
         
         self.cursor.execute(query)
         results = [x[0] for x in self.cursor.fetchall()]
-        print(self.table_name)
+        # print(self.table_name)
         
         query = f"ALTER TABLE \"{self.table_name}\" ADD "
         col_data_types:list[str] = ["VARCHAR(255)"] * (len(self.col_names) -2)
@@ -614,7 +614,7 @@ class sql_data_handler():
         #final_comments F47
         fc_alpha_range = ["Z"]
         fc_number_range = [[48,48]]
-        print(data[self.complex_addy(fc_alpha_range, fc_number_range, "Z47")[0][1][0]].value)
+        # print(data[self.complex_addy(fc_alpha_range, fc_number_range, "Z47")[0][1][0]].value)
         self.fc_comments_B_data = self.get_comments(data[self.complex_addy(fc_alpha_range, fc_number_range, "Z47")[0][1][0]].value)
 
     #endregion
@@ -656,7 +656,6 @@ if __name__ == "__main__":
 
     for path in paths:
         for file in os.listdir(path):
-
             if "runsheet" in file.lower():
                 if os.path.join(path, file) not in wb_paths:
                     wb_paths.append(os.path.join(path, file))   
@@ -670,9 +669,10 @@ if __name__ == "__main__":
             #         path = os.path.join("to_process",file)
             #         paths.append(path)    
         #for testing
-        args = ["write"]
+        # args = ["write"]
+        args = sys.argv[1:]
         temp = sql_data_handler("config.json", datas, wb_paths)
-        # args = sys.argv[1:]
+
         temp.connect()
         temp.execute(args)
         temp.close()
