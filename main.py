@@ -30,7 +30,12 @@ def read_excel(excel_path: str) -> list[Any]:
         wb = load_workbook(excel_path)
         sheets = wb.sheetnames
         for sheet in sheets:
-            data.append(wb[sheet]) 
+            ws = wb[sheet]
+            ws["B38"] = "Precursor"
+            ws["V38"] = "Precursor"
+            data.append(wb[sheet])
+        wb.save(excel_path)
+        wb.close()
     return data
 
 def get_exe_location():
@@ -187,17 +192,18 @@ class sql_data_handler():
         return data
     
     def write(self):
+        print("I'm writing it")
         chem_A_Data = self.pull_chem_data(self.chemistry_A, self.chem_data[0]) #type:ignore
         chem_B_Data = self.pull_chem_data(self.chemistry_B, self.chem_data[1]) #type:ignore
-        query = f"INSERT INTO \"{self.table_name}\"("
+        query = f"INSERT INTO \"{self.table_name}\" ("
         end = "("
         query_list = [f"\"{x}\"" for x in self.col_names if x not in self.chemistry_A and x not in self.chemistry_B]
         for name in self.col_names_basic:
-            query_list.append(f"\"{name}\"")
+            query_list.append(f"[{name}]")
         for chem in self.chemistry_A:
-            query_list.append(f"\"{chem}\"")
+            query_list.append(f"[{chem}]")
         for chem in self.chemistry_B:
-            query_list.append(f"\"{chem}\"")
+            query_list.append(f"[{chem}]")
         query_str = (',').join(query_list)
         query += query_str + ") "
         end_list = [f"\'{x}\'" for x in self.data_out]
@@ -211,8 +217,8 @@ class sql_data_handler():
             end_list.append(f"\'{chem_str}\'")
         end = (',').join(end_list)
         end = "(" + end + ")"
-        query += " VALUES " + end 
-
+        query += " VALUES " + end
+        print(query)
         self.cursor.execute(query)
         self.sql.commit()
 
@@ -421,8 +427,10 @@ class sql_data_handler():
                     self.build_cols()
                     self.gen_all_data_addy(sheet)
                     self.write()
+                
             if "nomove" not in protocol:
-                self.move_file(self.paths[i])
+                if "to_process" in self.paths[i]:
+                    self.move_file(self.paths[i])
             i += 1  
         
     #endregion
@@ -636,23 +644,39 @@ if __name__ == "__main__":
 
     paths:list[str] = []
     datas:list[list[Any]] = []
-    paths = []
-    for _,_,files in os.walk("to_process"):
-        for file in files:
-            if ".gitkeep" not in file:
-                path = os.path.join("to_process",file)
-                paths.append(path)
-                if ".xlsx" in file: datas.append(read_excel(path))
-    temp = sql_data_handler("config.json", datas, paths)
-    # args = sys.argv[1:]
-    #for testing
-    args = ["write", "nomove"]
-    
-    temp.connect()
-    temp.execute(args)
-    temp.close()
-    
-    i = 0
+    # paths = [r"I:\Morgano\CVD Runsheets",
+        #  r"I:\Curtis\CVD Run Sheet",
+        #  r"I:\Gotera\CVD Data",
+        #  r"I:\Zele\Backup\CVD Project\SierraRunsheets\2025\May 2025",
+         r"to_process"
+         ]
+    wb_paths: list[str] = []
+
+
+    for path in paths:
+        for file in os.listdir(path):
+            
+            # if "runsheet" in file.lower():
+            if os.path.join(path, file) not in wb_paths:
+                wb_paths.append(os.path.join(path, file))   
+                print(os.path.join(path, file))
+                if ".xlsx" in file: datas.append(read_excel(os.path.join(path, file)))
+
+                    
+        # for _,_,files in os.walk("to_process"):
+            # for file in files:
+            #     if ".gitkeep" not in file:
+            #         path = os.path.join("to_process",file)
+            #         paths.append(path)    
+        #for testing
+        args = ["write"]
+        temp = sql_data_handler("config.json", datas, wb_paths)
+        # args = sys.argv[1:]
+        temp.connect()
+        temp.execute(args)
+        temp.close()
+        
+        i = 0
 
     
 #end region
