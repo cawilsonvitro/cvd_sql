@@ -1,21 +1,14 @@
 #region imports
-import json
-import socket
 import os
 # import typing
-import sys
-import subprocess
 import venv #type:ignore
-import traceback
-import logging
-from logging.handlers import TimedRotatingFileHandler
-import datetime as dt
+
 
 
 #endregion
 
 
-def venv_builder(req = "constraints.txt") -> None:
+def venv_builder(req:str = "constraints.txt") -> None:
     """
     Creates a Python virtual environment in the current working directory and installs dependencies from a requirements file.
     This function performs the following steps:
@@ -29,26 +22,9 @@ def venv_builder(req = "constraints.txt") -> None:
     Returns:
         None
     """
-
-    lines: list[str]
-    req_file:str = req
-    with open( req_file, 'r') as f:
-        lines = list(f.readlines())
-    stripped_lines: list[str] = []
-    stripped: str = ""
     cwd = os.getcwd()
     venv_path = os.path.join(cwd, '.venv') 
     if not os.path.exists(venv_path):
-        # for line in lines:
-        #     stripped = line.strip()
-        #     if "delcom" in stripped:
-        #         stripped = "delcom @ file:///" + os.path.join(cwd,"install_files","delcom-0.1.1-py3-none-any.whl")
-        #     if stripped != "":
-        #         stripped_lines.append(stripped)
-
-        # with open(req_file, "w") as f:
-        #     for line in stripped_lines:
-        #         f.write("\n" + line)
 
         venv.create(venv_path, with_pip=True, clear=True)
         
